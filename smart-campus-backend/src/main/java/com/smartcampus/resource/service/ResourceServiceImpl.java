@@ -9,6 +9,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.smartcampus.resource.dto.ResourceRequest;
 import com.smartcampus.resource.dto.ResourceResponse;
+import com.smartcampus.resource.dto.ResourceStatusRequest;
+import com.smartcampus.resource.dto.UpdateResourceRequest;
 import com.smartcampus.resource.entity.Resource;
 import com.smartcampus.resource.repository.ResourceRepository;
 
@@ -51,6 +53,40 @@ public class ResourceServiceImpl implements ResourceService {
         return resourceRepository.findById(id)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    @Override
+    @Transactional
+    public ResourceResponse updateResource(Long id, UpdateResourceRequest request) {
+        if (request.getAvailableFrom().isAfter(request.getAvailableTo())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Available from time must be before available to time");
+        }
+
+        Resource resource = resourceRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        resource.setName(request.getName());
+        resource.setDescription(request.getDescription());
+        resource.setType(request.getType());
+        resource.setCapacity(request.getCapacity());
+        resource.setLocation(request.getLocation());
+        resource.setAvailableFrom(request.getAvailableFrom());
+        resource.setAvailableTo(request.getAvailableTo());
+        resource.setStatus(request.getStatus());
+
+        return mapToResponse(resourceRepository.save(resource));
+    }
+
+    @Override
+    @Transactional
+    public ResourceResponse updateResourceStatus(Long id, ResourceStatusRequest request) {
+        Resource resource = resourceRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        resource.setStatus(request.getStatus());
+
+        return mapToResponse(resourceRepository.save(resource));
     }
 
     private ResourceResponse mapToResponse(Resource resource) {
