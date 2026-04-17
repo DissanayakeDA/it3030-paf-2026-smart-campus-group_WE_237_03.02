@@ -2,6 +2,8 @@ package com.smartcampus.resource.controller;
 
 import java.util.List;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,11 +15,13 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.smartcampus.resource.dto.ResourceConditionRequest;
 import com.smartcampus.resource.dto.ResourceRequest;
 import com.smartcampus.resource.dto.ResourceResponse;
+import com.smartcampus.resource.dto.ResourceStatusRequest;
 import com.smartcampus.resource.dto.UpdateResourceRequest;
 import com.smartcampus.resource.enums.ResourceStatus;
 import com.smartcampus.resource.enums.ResourceType;
@@ -52,9 +56,13 @@ public class ResourceController {
         return ResponseEntity.ok(resourceService.getAllResources(type, minCapacity, location, status));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ResourceResponse> getResourceById(@PathVariable Long id) {
+        return ResponseEntity.ok(resourceService.getResourceById(id));
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<ResourceResponse> updateResource(
-            @PathVariable Long id,
+    public ResponseEntity<ResourceResponse> updateResource(@PathVariable Long id,
             @Valid @RequestBody UpdateResourceRequest request) {
         return ResponseEntity.ok(resourceService.updateResource(id, request));
     }

@@ -1,9 +1,10 @@
 package com.smartcampus.resource.service;
 
 import java.util.List;
-import com.smartcampus.resource.dto.ResourceConditionRequest;
 import com.smartcampus.resource.dto.ResourceRequest;
 import com.smartcampus.resource.dto.ResourceResponse;
+import com.smartcampus.resource.dto.ResourceStatusRequest;
+import com.smartcampus.resource.dto.ResourceConditionRequest;
 import com.smartcampus.resource.dto.UpdateResourceRequest;
 import com.smartcampus.resource.enums.ResourceStatus;
 import com.smartcampus.resource.enums.ResourceType;
