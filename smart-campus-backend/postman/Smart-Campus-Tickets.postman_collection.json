@@ -1,0 +1,49 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-smart-campus-tickets",
+		"name": "Smart Campus - Tickets API",
+		"description": "Create and fetch incident tickets (smart-campus-backend). Set `baseUrl` if your app runs on a different host/port. After Create Ticket, copy `id` into the `ticketId` variable for GET.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "ticketId",
+			"value": "1"
+		}
+	],
+	"item": [
+		{
+			"name": "Create Ticket",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"Projector not turning on in Lab 3\",\n  \"description\": \"Power LED is off; checked power cable and outlet.\",\n  \"category\": \"PROJECTOR\",\n  \"priority\": \"HIGH\",\n  \"preferredContact\": \"email:user@example.com\",\n  \"resourceId\": 42,\n  \"locationText\": \"Building A, Floor 2, Lab 3\",\n  \"createdByUserId\": 1001\n}"
+				},
+				"url": "{{baseUrl}}/api/tickets",
+				"description": "POST /api/tickets — creates a ticket with status OPEN."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Ticket by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "{{baseUrl}}/api/tickets/{{ticketId}}",
+				"description": "GET /api/tickets/{id} — set `ticketId` in the collection Variables tab (or paste the id from Create Ticket response)."
+			},
+			"response": []
+		}
+	]
+}
