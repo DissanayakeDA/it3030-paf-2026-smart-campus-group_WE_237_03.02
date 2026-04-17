@@ -89,6 +89,15 @@ public class ResourceServiceImpl implements ResourceService {
         return mapToResponse(resourceRepository.save(resource));
     }
 
+    @Override
+    @Transactional
+    public void deleteResource(Long id) {
+        if (!resourceRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        resourceRepository.deleteById(id);
+    }
+
     private ResourceResponse mapToResponse(Resource resource) {
         return ResourceResponse.builder()
                 .id(resource.getId())
