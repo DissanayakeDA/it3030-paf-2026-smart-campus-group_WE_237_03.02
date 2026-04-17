@@ -2,9 +2,13 @@ package com.smartcampus.ticket.service;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,6 +26,8 @@ import com.smartcampus.ticket.dto.DeleteTicketCommentRequest;
 import com.smartcampus.ticket.dto.TicketAttachmentResponse;
 import com.smartcampus.ticket.dto.TicketCommentResponse;
 import com.smartcampus.ticket.dto.TicketResponse;
+import com.smartcampus.ticket.dto.TicketSlaResponse;
+import com.smartcampus.ticket.dto.TicketSummaryResponse;
 import com.smartcampus.ticket.dto.UpdateTicketCommentRequest;
 import com.smartcampus.ticket.dto.UpdateTicketStatusRequest;
 import com.smartcampus.ticket.entity.Ticket;
@@ -69,6 +75,35 @@ public class TicketServiceImpl implements TicketService {
 	@Transactional(readOnly = true)
 	public Optional<TicketResponse> getTicketById(Long id) {
 		return ticketRepository.findById(id).map(this::toResponse);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<TicketSlaResponse> getTicketSla(Long id) {
+		return ticketRepository.findById(id).map(this::toSlaResponse);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public TicketSummaryResponse getSlaSummary() {
+		Set<TicketStatus> resolvedStatuses = EnumSet.of(TicketStatus.RESOLVED, TicketStatus.CLOSED);
+		long totalTickets = ticketRepository.count();
+		long resolvedTickets = ticketRepository.countByStatusIn(resolvedStatuses);
+		long openTickets = ticketRepository.countByStatusNotIn(resolvedStatuses);
+		List<Ticket> all = ticketRepository.findAll();
+		Double averageFirstResponseMinutes = averageMinutesBetweenCreatedAnd(
+				all.stream().filter(t -> t.getFirstResponseAt() != null).toList(),
+				t -> t.getFirstResponseAt());
+		Double averageResolutionMinutes = averageMinutesBetweenCreatedAnd(
+				all.stream().filter(t -> t.getResolvedAt() != null).toList(),
+				t -> t.getResolvedAt());
+		return TicketSummaryResponse.builder()
+				.totalTickets(totalTickets)
+				.openTickets(openTickets)
+				.resolvedTickets(resolvedTickets)
+				.averageFirstResponseMinutes(averageFirstResponseMinutes)
+				.averageResolutionMinutes(averageResolutionMinutes)
+				.build();
 	}
 
 	@Override
@@ -247,6 +282,33 @@ public class TicketServiceImpl implements TicketService {
 		if (ticket.getFirstResponseAt() == null) {
 			ticket.setFirstResponseAt(Instant.now());
 		}
+	}
+
+	private TicketSlaResponse toSlaResponse(Ticket ticket) {
+		Instant createdAt = ticket.getCreatedAt();
+		Long timeToFirstResponseMinutes = null;
+		if (ticket.getFirstResponseAt() != null) {
+			timeToFirstResponseMinutes = ChronoUnit.MINUTES.between(createdAt, ticket.getFirstResponseAt());
+		}
+		Long timeToResolutionMinutes = null;
+		if (ticket.getResolvedAt() != null) {
+			timeToResolutionMinutes = ChronoUnit.MINUTES.between(createdAt, ticket.getResolvedAt());
+		}
+		return TicketSlaResponse.builder()
+				.ticketId(ticket.getId())
+				.timeToFirstResponseMinutes(timeToFirstResponseMinutes)
+				.timeToResolutionMinutes(timeToResolutionMinutes)
+				.build();
+	}
+
+	private Double averageMinutesBetweenCreatedAnd(List<Ticket> tickets, Function<Ticket, Instant> endInstant) {
+		if (tickets.isEmpty()) {
+			return null;
+		}
+		return tickets.stream()
+				.mapToLong(t -> ChronoUnit.MINUTES.between(t.getCreatedAt(), endInstant.apply(t)))
+				.average()
+				.getAsDouble();
 	}
 
 	private TicketResponse toResponse(Ticket ticket) {

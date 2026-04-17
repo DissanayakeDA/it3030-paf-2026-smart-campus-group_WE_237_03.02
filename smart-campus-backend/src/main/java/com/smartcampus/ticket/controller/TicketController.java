@@ -14,6 +14,8 @@ import com.smartcampus.ticket.dto.AddResolutionNotesRequest;
 import com.smartcampus.ticket.dto.AssignTechnicianRequest;
 import com.smartcampus.ticket.dto.CreateTicketRequest;
 import com.smartcampus.ticket.dto.TicketResponse;
+import com.smartcampus.ticket.dto.TicketSlaResponse;
+import com.smartcampus.ticket.dto.TicketSummaryResponse;
 import com.smartcampus.ticket.dto.UpdateTicketStatusRequest;
 import com.smartcampus.ticket.service.TicketService;
 
@@ -38,6 +40,18 @@ public class TicketController {
 		return ticketService.getTicketById(id)
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
+	}
+
+	@GetMapping("/{id}/sla")
+	public ResponseEntity<TicketSlaResponse> getTicketSla(@PathVariable Long id) {
+		return ticketService.getTicketSla(id)
+				.map(ResponseEntity::ok)
+				.orElse(ResponseEntity.notFound().build());
+	}
+
+	@GetMapping("/admin/sla-summary")
+	public ResponseEntity<TicketSummaryResponse> getSlaSummary() {
+		return ResponseEntity.ok(ticketService.getSlaSummary());
 	}
 
 	@PatchMapping("/{id}/assign-technician")
