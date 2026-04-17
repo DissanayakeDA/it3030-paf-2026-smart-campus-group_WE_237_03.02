@@ -27,6 +27,11 @@ public class ResourceServiceImpl implements ResourceService {
     @Override
     @Transactional
     public ResourceResponse createResource(ResourceRequest request) {
+        if (request.getAvailableFrom().isAfter(request.getAvailableTo())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Available from time must be before available to time");
+        }
+
         Resource resource = Resource.builder()
                 .name(request.getName())
                 .description(request.getDescription())
