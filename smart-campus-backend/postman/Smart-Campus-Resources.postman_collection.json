@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "a1b2c3d4-e5f6-4a5b-9c8d-7e6f5a4b3c2d",
 		"name": "Smart-Campus-Resources",
-		"description": "Collection for testing Resources module in the Smart Campus project.",
+		"description": "Comprehensive collection for testing Resource Management in the Smart Campus project.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -13,7 +13,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"name\": \"Lecture Hall 01\",\r\n    \"description\": \"Main lecture hall for computing faculty\",\r\n    \"type\": \"LECTURE_HALL\",\r\n    \"capacity\": 150,\r\n    \"location\": \"Building A, Floor 2\",\r\n    \"availableFrom\": \"08:00:00\",\r\n    \"availableTo\": \"20:00:00\",\r\n    \"status\": \"ACTIVE\"\r\n}",
+					"raw": "{\r\n    \"name\": \"Lecture Hall 01\",\r\n    \"description\": \"Main lecture hall for computing faculty\",\r\n    \"type\": \"LECTURE_HALL\",\r\n    \"capacity\": 150,\r\n    \"location\": \"Building A, Floor 2\",\r\n    \"availableFrom\": \"08:00:00\",\r\n    \"availableTo\": \"20:00:00\",\r\n    \"status\": \"ACTIVE\",\r\n    \"condition\": \"EXCELLENT\",\r\n    \"inspectionNotes\": \"Newly renovated\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -28,60 +28,6 @@
 					"path": [
 						"api",
 						"resources"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Get All Resources",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/resources",
-					"host": [
-						"{{baseUrl}}"
-					],
-					"path": [
-						"api",
-						"resources"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Get Resources - Filtered",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/resources?type=LECTURE_HALL&minCapacity=100&location=Building&status=ACTIVE",
-					"host": [
-						"{{baseUrl}}"
-					],
-					"path": [
-						"api",
-						"resources"
-					],
-					"query": [
-						{
-							"key": "type",
-							"value": "LECTURE_HALL"
-						},
-						{
-							"key": "minCapacity",
-							"value": "100"
-						},
-						{
-							"key": "location",
-							"value": "Building"
-						},
-						{
-							"key": "status",
-							"value": "ACTIVE"
-						}
 					]
 				}
 			},
@@ -107,13 +53,49 @@
 			"response": []
 		},
 		{
+			"name": "Get All Resources (Filters)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/resources?type=LECTURE_HALL&minCapacity=100&location=Building A&status=ACTIVE",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"resources"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "LECTURE_HALL"
+						},
+						{
+							"key": "minCapacity",
+							"value": "100"
+						},
+						{
+							"key": "location",
+							"value": "Building A"
+						},
+						{
+							"key": "status",
+							"value": "ACTIVE"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Update Resource",
 			"request": {
 				"method": "PUT",
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"name\": \"Lecture Hall 01 - Updated\",\r\n    \"description\": \"Main lecture hall area\",\r\n    \"type\": \"LECTURE_HALL\",\r\n    \"capacity\": 200,\r\n    \"location\": \"Building A, Floor 2\",\r\n    \"availableFrom\": \"08:00:00\",\r\n    \"availableTo\": \"22:00:00\",\r\n    \"status\": \"ACTIVE\"\r\n}",
+					"raw": "{\r\n    \"name\": \"Lecture Hall 02\",\r\n    \"description\": \"Updated description\",\r\n    \"type\": \"LECTURE_HALL\",\r\n    \"capacity\": 200,\r\n    \"location\": \"Building A, Floor 3\",\r\n    \"availableFrom\": \"09:00:00\",\r\n    \"availableTo\": \"18:00:00\",\r\n    \"status\": \"ACTIVE\",\r\n    \"condition\": \"GOOD\",\r\n    \"inspectionNotes\": \"Minor scratches on desks\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -139,17 +121,8 @@
 			"request": {
 				"method": "PATCH",
 				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"status\": \"OUT_OF_SERVICE\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
 				"url": {
-					"raw": "{{baseUrl}}/api/resources/1/status",
+					"raw": "{{baseUrl}}/api/resources/1/status?status=OUT_OF_SERVICE",
 					"host": [
 						"{{baseUrl}}"
 					],
@@ -158,6 +131,60 @@
 						"resources",
 						"1",
 						"status"
+					],
+					"query": [
+						{
+							"key": "status",
+							"value": "OUT_OF_SERVICE"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Resource Condition",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"condition\": \"NEEDS_ATTENTION\",\r\n    \"inspectionNotes\": \"Projector not working reliably\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/resources/1/condition",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"resources",
+						"1",
+						"condition"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Resources Needing Attention",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/resources/needs-attention",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"resources",
+						"needs-attention"
 					]
 				}
 			},
