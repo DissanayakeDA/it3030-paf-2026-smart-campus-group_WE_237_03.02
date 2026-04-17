@@ -13,6 +13,8 @@ import com.smartcampus.ticket.dto.DeleteTicketCommentRequest;
 import com.smartcampus.ticket.dto.TicketAttachmentResponse;
 import com.smartcampus.ticket.dto.TicketCommentResponse;
 import com.smartcampus.ticket.dto.TicketResponse;
+import com.smartcampus.ticket.dto.TicketSlaResponse;
+import com.smartcampus.ticket.dto.TicketSummaryResponse;
 import com.smartcampus.ticket.dto.UpdateTicketCommentRequest;
 import com.smartcampus.ticket.dto.UpdateTicketStatusRequest;
 
@@ -21,6 +23,10 @@ public interface TicketService {
 	TicketResponse createTicket(CreateTicketRequest request);
 
 	Optional<TicketResponse> getTicketById(Long id);
+
+	Optional<TicketSlaResponse> getTicketSla(Long id);
+
+	TicketSummaryResponse getSlaSummary();
 
 	TicketResponse assignTechnician(Long ticketId, AssignTechnicianRequest request);
 

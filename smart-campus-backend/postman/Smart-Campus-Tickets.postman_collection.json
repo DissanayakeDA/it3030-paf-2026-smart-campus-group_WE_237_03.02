@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "a1b2c3d4-smart-campus-tickets",
 		"name": "Smart Campus - Tickets API",
-		"description": "Incident tickets API (smart-campus-backend). Set `baseUrl` if your app runs on a different host/port. After Create Ticket, copy `id` into `ticketId` for the other requests. PATCH endpoints require `actorRole` ADMIN or TECHNICIAN. Attachments: POST multipart `file` (images only, max 3 per ticket); requires Cloudinary env vars at runtime.",
+		"description": "Incident tickets API (smart-campus-backend). Set `baseUrl` if your app runs on a different host/port. After Create Ticket, copy `id` into `ticketId` for the other requests. PATCH endpoints require `actorRole` ADMIN or TECHNICIAN. Attachments: POST multipart `file` (images only, max 3 per ticket); requires Cloudinary env vars at runtime. SLA: GET ticket SLA metrics (time-to-first-response, time-to-resolution) and GET admin SLA summary (counts and averages).",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -42,6 +42,26 @@
 				"header": [],
 				"url": "{{baseUrl}}/api/tickets/{{ticketId}}",
 				"description": "GET /api/tickets/{id} — set `ticketId` in the collection Variables tab (or paste the id from Create Ticket response)."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Ticket SLA",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "{{baseUrl}}/api/tickets/{{ticketId}}/sla",
+				"description": "GET /api/tickets/{id}/sla — time-to-first-response and time-to-resolution in minutes (null if firstResponseAt or resolvedAt not set)."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Admin SLA Summary",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "{{baseUrl}}/api/tickets/admin/sla-summary",
+				"description": "GET /api/tickets/admin/sla-summary — total/open/resolved counts and average first-response and resolution times (minutes)."
 			},
 			"response": []
 		},
