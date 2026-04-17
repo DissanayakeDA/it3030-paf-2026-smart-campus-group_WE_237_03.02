@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "a1b2c3d4-smart-campus-tickets",
 		"name": "Smart Campus - Tickets API",
-		"description": "Create and fetch incident tickets (smart-campus-backend). Set `baseUrl` if your app runs on a different host/port. After Create Ticket, copy `id` into the `ticketId` variable for GET.",
+		"description": "Incident tickets API (smart-campus-backend). Set `baseUrl` if your app runs on a different host/port. After Create Ticket, copy `id` into `ticketId` for the other requests. PATCH endpoints require `actorRole` ADMIN or TECHNICIAN.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -42,6 +42,63 @@
 				"header": [],
 				"url": "{{baseUrl}}/api/tickets/{{ticketId}}",
 				"description": "GET /api/tickets/{id} — set `ticketId` in the collection Variables tab (or paste the id from Create Ticket response)."
+			},
+			"response": []
+		},
+		{
+			"name": "Assign Technician",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"technicianId\": 42,\n  \"actingUserId\": 7,\n  \"actorRole\": \"ADMIN\"\n}"
+				},
+				"url": "{{baseUrl}}/api/tickets/{{ticketId}}/assign-technician",
+				"description": "PATCH /api/tickets/{id}/assign-technician — sets assignedTechnicianId. Admin or technician only."
+			},
+			"response": []
+		},
+		{
+			"name": "Update Ticket Status",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"actingUserId\": 7,\n  \"actorRole\": \"TECHNICIAN\"\n}"
+				},
+				"url": "{{baseUrl}}/api/tickets/{{ticketId}}/status",
+				"description": "PATCH /api/tickets/{id}/status — update status (OPEN, IN_PROGRESS, RESOLVED, CLOSED, REJECTED). For REJECTED, include rejectionReason. Admin or technician only."
+			},
+			"response": []
+		},
+		{
+			"name": "Add Resolution Notes",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"resolutionNotes\": \"Replaced projector lamp; verified display output.\",\n  \"actingUserId\": 42,\n  \"actorRole\": \"TECHNICIAN\"\n}"
+				},
+				"url": "{{baseUrl}}/api/tickets/{{ticketId}}/resolution-notes",
+				"description": "PATCH /api/tickets/{id}/resolution-notes — appends resolution notes. Admin or technician only."
 			},
 			"response": []
 		}
