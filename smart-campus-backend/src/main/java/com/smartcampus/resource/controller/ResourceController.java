@@ -1,6 +1,6 @@
 package com.smartcampus.resource.controller;
 
-import java.lang.SuppressWarnings;
+import java.util.List;
 
 import java.util.List;
 
@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.smartcampus.resource.dto.ResourceConditionRequest;
 import com.smartcampus.resource.dto.ResourceRequest;
 import com.smartcampus.resource.dto.ResourceResponse;
 import com.smartcampus.resource.dto.ResourceStatusRequest;
@@ -41,6 +42,11 @@ public class ResourceController {
         return new ResponseEntity<>(resourceService.createResource(request), HttpStatus.CREATED);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ResourceResponse> getResourceById(@PathVariable Long id) {
+        return ResponseEntity.ok(resourceService.getResourceById(id));
+    }
+
     @GetMapping
     public ResponseEntity<List<ResourceResponse>> getAllResources(
             @RequestParam(required = false) ResourceType type,
@@ -62,14 +68,29 @@ public class ResourceController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<ResourceResponse> updateResourceStatus(@PathVariable Long id,
-            @Valid @RequestBody ResourceStatusRequest request) {
-        return ResponseEntity.ok(resourceService.updateResourceStatus(id, request));
+    public ResponseEntity<ResourceResponse> updateResourceStatus(
+            @PathVariable Long id,
+            @RequestParam ResourceStatus status) {
+        return ResponseEntity.ok(resourceService.updateResourceStatus(id, status));
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteResource(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteResource(@PathVariable Long id) {
         resourceService.deleteResource(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Condition Management Endpoints
+
+    @PatchMapping("/{id}/condition")
+    public ResponseEntity<ResourceResponse> updateResourceCondition(
+            @PathVariable Long id,
+            @Valid @RequestBody ResourceConditionRequest request) {
+        return ResponseEntity.ok(resourceService.updateResourceCondition(id, request));
+    }
+
+    @GetMapping("/needs-attention")
+    public ResponseEntity<List<ResourceResponse>> getResourcesNeedingAttention() {
+        return ResponseEntity.ok(resourceService.getResourcesNeedingAttention());
     }
 }

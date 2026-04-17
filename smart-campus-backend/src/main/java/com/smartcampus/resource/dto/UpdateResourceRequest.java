@@ -2,6 +2,7 @@ package com.smartcampus.resource.dto;
 
 import java.time.LocalTime;
 
+import com.smartcampus.resource.enums.ResourceCondition;
 import com.smartcampus.resource.enums.ResourceStatus;
 import com.smartcampus.resource.enums.ResourceType;
 
@@ -44,4 +45,8 @@ public class UpdateResourceRequest {
 
     @NotNull(message = "Status is required")
     private ResourceStatus status;
+
+    private ResourceCondition condition;
+
+    private String inspectionNotes;
 }
