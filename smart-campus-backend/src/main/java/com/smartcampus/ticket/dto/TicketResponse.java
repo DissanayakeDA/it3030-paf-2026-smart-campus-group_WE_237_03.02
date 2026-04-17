@@ -28,6 +28,11 @@ public class TicketResponse {
 	private Long resourceId;
 	private String locationText;
 	private Long createdByUserId;
+	private Long assignedTechnicianId;
+	private String rejectionReason;
+	private String resolutionNotes;
+	private Instant firstResponseAt;
+	private Instant resolvedAt;
 	private TicketStatus status;
 	private Instant createdAt;
 	private Instant updatedAt;
