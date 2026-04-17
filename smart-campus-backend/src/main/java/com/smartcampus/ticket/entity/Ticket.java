@@ -60,6 +60,18 @@ public class Ticket {
 	@Column(nullable = false)
 	private Long createdByUserId;
 
+	private Long assignedTechnicianId;
+
+	@Column(length = 4000)
+	private String rejectionReason;
+
+	@Column(length = 4000)
+	private String resolutionNotes;
+
+	private Instant firstResponseAt;
+
+	private Instant resolvedAt;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private TicketStatus status;
