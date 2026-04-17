@@ -1,7 +1,11 @@
 package com.smartcampus.resource.service;
 
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.smartcampus.resource.dto.ResourceRequest;
 import com.smartcampus.resource.dto.ResourceResponse;
@@ -31,6 +35,22 @@ public class ResourceServiceImpl implements ResourceService {
                 .build();
 
         return mapToResponse(resourceRepository.save(resource));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ResourceResponse> getAllResources() {
+        return resourceRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResourceResponse getResourceById(Long id) {
+        return resourceRepository.findById(id)
+                .map(this::mapToResponse)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     private ResourceResponse mapToResponse(Resource resource) {
