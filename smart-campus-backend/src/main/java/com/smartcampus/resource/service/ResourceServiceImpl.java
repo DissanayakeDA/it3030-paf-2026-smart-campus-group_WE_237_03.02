@@ -12,6 +12,8 @@ import com.smartcampus.resource.dto.ResourceResponse;
 import com.smartcampus.resource.dto.ResourceStatusRequest;
 import com.smartcampus.resource.dto.UpdateResourceRequest;
 import com.smartcampus.resource.entity.Resource;
+import com.smartcampus.resource.enums.ResourceStatus;
+import com.smartcampus.resource.enums.ResourceType;
 import com.smartcampus.resource.repository.ResourceRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,11 @@ public class ResourceServiceImpl implements ResourceService {
     @Override
     @Transactional
     public ResourceResponse createResource(ResourceRequest request) {
+        if (request.getAvailableFrom().isAfter(request.getAvailableTo())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Available from time must be before available to time");
+        }
+
         Resource resource = Resource.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -41,8 +48,9 @@ public class ResourceServiceImpl implements ResourceService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ResourceResponse> getAllResources() {
-        return resourceRepository.findAll().stream()
+    public List<ResourceResponse> getAllResources(ResourceType type, Integer minCapacity, String location,
+            ResourceStatus status) {
+        return resourceRepository.findByFilters(type, minCapacity, location, status).stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -87,6 +95,15 @@ public class ResourceServiceImpl implements ResourceService {
         resource.setStatus(request.getStatus());
 
         return mapToResponse(resourceRepository.save(resource));
+    }
+
+    @Override
+    @Transactional
+    public void deleteResource(Long id) {
+        if (!resourceRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        resourceRepository.deleteById(id);
     }
 
     private ResourceResponse mapToResponse(Resource resource) {

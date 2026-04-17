@@ -52,6 +52,42 @@
 			"response": []
 		},
 		{
+			"name": "Get Resources - Filtered",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/resources?type=LECTURE_HALL&minCapacity=100&location=Building&status=ACTIVE",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"resources"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "LECTURE_HALL"
+						},
+						{
+							"key": "minCapacity",
+							"value": "100"
+						},
+						{
+							"key": "location",
+							"value": "Building"
+						},
+						{
+							"key": "status",
+							"value": "ACTIVE"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Get Resource by ID",
 			"request": {
 				"method": "GET",
@@ -122,6 +158,25 @@
 						"resources",
 						"1",
 						"status"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Resource",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/resources/1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"resources",
+						"1"
 					]
 				}
 			},
