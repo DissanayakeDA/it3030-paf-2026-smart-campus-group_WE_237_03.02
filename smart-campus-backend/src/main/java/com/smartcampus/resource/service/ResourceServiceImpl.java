@@ -1,8 +1,8 @@
 package com.smartcampus.resource.service;
 
+import java.util.List;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.smartcampus.resource.dto.ResourceConditionRequest;
 import com.smartcampus.resource.dto.ResourceRequest;
 import com.smartcampus.resource.dto.ResourceResponse;
+import com.smartcampus.resource.dto.ResourceStatusRequest;
 import com.smartcampus.resource.dto.UpdateResourceRequest;
 import com.smartcampus.resource.entity.Resource;
 import com.smartcampus.resource.enums.ResourceCondition;
@@ -31,6 +32,10 @@ public class ResourceServiceImpl implements ResourceService {
     @Override
     @Transactional
     public ResourceResponse createResource(ResourceRequest request) {
+        if (request.getAvailableFrom().isAfter(request.getAvailableTo())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Available from time must be before available to time");
+        }
         validateTimeRange(request.getAvailableFrom(), request.getAvailableTo());
 
         Resource resource = Resource.builder()
@@ -51,6 +56,11 @@ public class ResourceServiceImpl implements ResourceService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<ResourceResponse> getAllResources(ResourceType type, Integer minCapacity, String location,
+            ResourceStatus status) {
+        return resourceRepository.findByFilters(type, minCapacity, location, status).stream()
+                .map(this::mapToResponse)
+                .toList();
     public ResourceResponse getResourceById(Long id) {
         return resourceRepository.findById(id)
                 .map(this::mapToResponse)
@@ -59,6 +69,10 @@ public class ResourceServiceImpl implements ResourceService {
 
     @Override
     @Transactional(readOnly = true)
+    public ResourceResponse getResourceById(Long id) {
+        return resourceRepository.findById(id)
+                .map(this::mapToResponse)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     public List<ResourceResponse> getAllResources(ResourceType type, Integer minCapacity, String location,
             ResourceStatus status) {
         return resourceRepository.findByFilters(type, minCapacity, location, status)
@@ -70,6 +84,13 @@ public class ResourceServiceImpl implements ResourceService {
     @Override
     @Transactional
     public ResourceResponse updateResource(Long id, UpdateResourceRequest request) {
+        if (request.getAvailableFrom().isAfter(request.getAvailableTo())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Available from time must be before available to time");
+        }
+
+        Resource resource = resourceRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         validateTimeRange(request.getAvailableFrom(), request.getAvailableTo());
 
         Resource resource = resourceRepository.findById(id)
@@ -95,6 +116,11 @@ public class ResourceServiceImpl implements ResourceService {
 
     @Override
     @Transactional
+    public ResourceResponse updateResourceStatus(Long id, ResourceStatusRequest request) {
+        Resource resource = resourceRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        resource.setStatus(request.getStatus());
     public void deleteResource(Long id) {
         if (!resourceRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found");
@@ -127,6 +153,12 @@ public class ResourceServiceImpl implements ResourceService {
     }
 
     @Override
+    @Transactional
+    public void deleteResource(Long id) {
+        if (!resourceRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        resourceRepository.deleteById(id);
     @Transactional(readOnly = true)
     public List<ResourceResponse> getResourcesNeedingAttention() {
         return resourceRepository.findByConditionIn(Arrays.asList(
