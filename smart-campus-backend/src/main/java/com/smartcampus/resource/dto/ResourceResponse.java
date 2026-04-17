@@ -3,6 +3,7 @@ package com.smartcampus.resource.dto;
 import java.time.Instant;
 import java.time.LocalTime;
 
+import com.smartcampus.resource.enums.ResourceCondition;
 import com.smartcampus.resource.enums.ResourceStatus;
 import com.smartcampus.resource.enums.ResourceType;
 
@@ -27,6 +28,9 @@ public class ResourceResponse {
     private LocalTime availableFrom;
     private LocalTime availableTo;
     private ResourceStatus status;
+    private ResourceCondition condition;
+    private Instant lastInspectedAt;
+    private String inspectionNotes;
     private Instant createdAt;
     private Instant updatedAt;
 }
