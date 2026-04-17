@@ -69,6 +69,63 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Update Resource",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"Lecture Hall 01 - Updated\",\r\n    \"description\": \"Main lecture hall area\",\r\n    \"type\": \"LECTURE_HALL\",\r\n    \"capacity\": 200,\r\n    \"location\": \"Building A, Floor 2\",\r\n    \"availableFrom\": \"08:00:00\",\r\n    \"availableTo\": \"22:00:00\",\r\n    \"status\": \"ACTIVE\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/resources/1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"resources",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Resource Status",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"status\": \"OUT_OF_SERVICE\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/resources/1/status",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"resources",
+						"1",
+						"status"
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"variable": [

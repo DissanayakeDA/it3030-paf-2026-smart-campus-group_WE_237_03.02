@@ -7,14 +7,18 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.smartcampus.resource.dto.ResourceRequest;
 import com.smartcampus.resource.dto.ResourceResponse;
+import com.smartcampus.resource.dto.ResourceStatusRequest;
+import com.smartcampus.resource.dto.UpdateResourceRequest;
 import com.smartcampus.resource.service.ResourceService;
 
 import jakarta.validation.Valid;
@@ -40,5 +44,17 @@ public class ResourceController {
     @GetMapping("/{id}")
     public ResponseEntity<ResourceResponse> getResourceById(@PathVariable Long id) {
         return ResponseEntity.ok(resourceService.getResourceById(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ResourceResponse> updateResource(@PathVariable Long id,
+            @Valid @RequestBody UpdateResourceRequest request) {
+        return ResponseEntity.ok(resourceService.updateResource(id, request));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ResourceResponse> updateResourceStatus(@PathVariable Long id,
+            @Valid @RequestBody ResourceStatusRequest request) {
+        return ResponseEntity.ok(resourceService.updateResourceStatus(id, request));
     }
 }
