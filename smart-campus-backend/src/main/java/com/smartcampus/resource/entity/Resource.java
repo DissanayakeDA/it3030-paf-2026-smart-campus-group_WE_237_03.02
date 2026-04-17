@@ -3,6 +3,7 @@ package com.smartcampus.resource.entity;
 import java.time.Instant;
 import java.time.LocalTime;
 
+import com.smartcampus.resource.enums.ResourceCondition;
 import com.smartcampus.resource.enums.ResourceStatus;
 import com.smartcampus.resource.enums.ResourceType;
 
@@ -61,6 +62,15 @@ public class Resource {
     @Column(nullable = false)
     private ResourceStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ResourceCondition condition;
+
+    private Instant lastInspectedAt;
+
+    @Column(length = 1000)
+    private String inspectionNotes;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -74,6 +84,9 @@ public class Resource {
         this.updatedAt = now;
         if (this.status == null) {
             this.status = ResourceStatus.ACTIVE;
+        }
+        if (this.condition == null) {
+            this.condition = ResourceCondition.EXCELLENT;
         }
     }
 
