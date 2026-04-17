@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,6 +22,8 @@ import com.smartcampus.resource.dto.ResourceRequest;
 import com.smartcampus.resource.dto.ResourceResponse;
 import com.smartcampus.resource.dto.ResourceStatusRequest;
 import com.smartcampus.resource.dto.UpdateResourceRequest;
+import com.smartcampus.resource.enums.ResourceStatus;
+import com.smartcampus.resource.enums.ResourceType;
 import com.smartcampus.resource.service.ResourceService;
 
 import jakarta.validation.Valid;
@@ -39,8 +42,12 @@ public class ResourceController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ResourceResponse>> getAllResources() {
-        return ResponseEntity.ok(resourceService.getAllResources());
+    public ResponseEntity<List<ResourceResponse>> getAllResources(
+            @RequestParam(required = false) ResourceType type,
+            @RequestParam(required = false) Integer minCapacity,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) ResourceStatus status) {
+        return ResponseEntity.ok(resourceService.getAllResources(type, minCapacity, location, status));
     }
 
     @GetMapping("/{id}")
