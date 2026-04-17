@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.smartcampus.auth.dto.CreateUserRequest;
+import com.smartcampus.auth.dto.UpdateUserRequest;
 import com.smartcampus.auth.dto.UserResponse;
 import com.smartcampus.auth.entity.User;
 import com.smartcampus.auth.repository.UserRepository;
@@ -31,7 +32,7 @@ public class UserServiceImpl implements UserService {
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
-                .password(request.getPassword()) // Note: Security/encryption not implemented yet as per scope
+                .password(request.getPassword())
                 .role(request.getRole())
                 .build();
 
@@ -51,6 +52,32 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public Optional<UserResponse> getUserById(Long id) {
         return userRepository.findById(id).map(this::toResponse);
+    }
+
+    @Override
+    @Transactional
+    public UserResponse updateUser(Long id, UpdateUserRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!user.getEmail().equals(request.getEmail()) && 
+            userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
+        }
+
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        
+        User updatedUser = userRepository.save(user);
+        return toResponse(updatedUser);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        userRepository.delete(user);
     }
 
     private UserResponse toResponse(User user) {
