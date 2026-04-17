@@ -12,6 +12,8 @@ import com.smartcampus.resource.dto.ResourceResponse;
 import com.smartcampus.resource.dto.ResourceStatusRequest;
 import com.smartcampus.resource.dto.UpdateResourceRequest;
 import com.smartcampus.resource.entity.Resource;
+import com.smartcampus.resource.enums.ResourceStatus;
+import com.smartcampus.resource.enums.ResourceType;
 import com.smartcampus.resource.repository.ResourceRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -41,8 +43,9 @@ public class ResourceServiceImpl implements ResourceService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ResourceResponse> getAllResources() {
-        return resourceRepository.findAll().stream()
+    public List<ResourceResponse> getAllResources(ResourceType type, Integer minCapacity, String location,
+            ResourceStatus status) {
+        return resourceRepository.findByFilters(type, minCapacity, location, status).stream()
                 .map(this::mapToResponse)
                 .toList();
     }
