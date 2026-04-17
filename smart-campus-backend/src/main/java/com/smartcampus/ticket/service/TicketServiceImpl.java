@@ -1,27 +1,35 @@
 package com.smartcampus.ticket.service;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.smartcampus.ticket.dto.AddResolutionNotesRequest;
 import com.smartcampus.ticket.dto.AddTicketCommentRequest;
 import com.smartcampus.ticket.dto.AssignTechnicianRequest;
 import com.smartcampus.ticket.dto.CreateTicketRequest;
 import com.smartcampus.ticket.dto.DeleteTicketCommentRequest;
+import com.smartcampus.ticket.dto.TicketAttachmentResponse;
 import com.smartcampus.ticket.dto.TicketCommentResponse;
 import com.smartcampus.ticket.dto.TicketResponse;
 import com.smartcampus.ticket.dto.UpdateTicketCommentRequest;
 import com.smartcampus.ticket.dto.UpdateTicketStatusRequest;
 import com.smartcampus.ticket.entity.Ticket;
+import com.smartcampus.ticket.entity.TicketAttachment;
 import com.smartcampus.ticket.entity.TicketComment;
 import com.smartcampus.ticket.enums.ActorRole;
 import com.smartcampus.ticket.enums.TicketStatus;
+import com.smartcampus.ticket.repository.TicketAttachmentRepository;
 import com.smartcampus.ticket.repository.TicketCommentRepository;
 import com.smartcampus.ticket.repository.TicketRepository;
 
@@ -34,6 +42,10 @@ public class TicketServiceImpl implements TicketService {
 	private final TicketRepository ticketRepository;
 
 	private final TicketCommentRepository ticketCommentRepository;
+
+	private final TicketAttachmentRepository ticketAttachmentRepository;
+
+	private final Cloudinary cloudinary;
 
 	@Override
 	@Transactional
@@ -150,6 +162,64 @@ public class TicketServiceImpl implements TicketService {
 
 	@Override
 	@Transactional
+	public TicketAttachmentResponse uploadAttachment(Long ticketId, MultipartFile file) {
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		if (file == null || file.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+		}
+		String contentType = file.getContentType();
+		if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+		}
+		if (ticketAttachmentRepository.countByTicketId(ticketId) >= 3) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT);
+		}
+		@SuppressWarnings("unchecked")
+		Map<String, Object> uploadResult;
+		try {
+			uploadResult = cloudinary.uploader().upload(file.getBytes(),
+					ObjectUtils.asMap("resource_type", "image"));
+		} catch (IOException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+		} catch (Exception e) {
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		String fileUrl = (String) uploadResult.get("secure_url");
+		if (fileUrl == null) {
+			fileUrl = (String) uploadResult.get("url");
+		}
+		String publicId = (String) uploadResult.get("public_id");
+		if (fileUrl == null || fileUrl.isBlank() || publicId == null || publicId.isBlank()) {
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		String originalName = file.getOriginalFilename();
+		String fileName = (originalName != null && !originalName.isBlank()) ? originalName : "image";
+
+		TicketAttachment attachment = TicketAttachment.builder()
+				.ticket(ticket)
+				.fileName(fileName)
+				.fileType(contentType)
+				.fileUrl(fileUrl)
+				.publicId(publicId)
+				.build();
+		TicketAttachment saved = ticketAttachmentRepository.save(attachment);
+		return toAttachmentResponse(saved);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<TicketAttachmentResponse> getAttachmentsByTicket(Long ticketId) {
+		if (!ticketRepository.existsById(ticketId)) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+		}
+		return ticketAttachmentRepository.findByTicketId(ticketId).stream()
+				.map(this::toAttachmentResponse)
+				.toList();
+	}
+
+	@Override
+	@Transactional
 	public void deleteTicketComment(Long commentId, DeleteTicketCommentRequest request) {
 		TicketComment comment = ticketCommentRepository.findById(commentId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -209,6 +279,17 @@ public class TicketServiceImpl implements TicketService {
 				.content(comment.getContent())
 				.createdAt(comment.getCreatedAt())
 				.updatedAt(comment.getUpdatedAt())
+				.build();
+	}
+
+	private TicketAttachmentResponse toAttachmentResponse(TicketAttachment attachment) {
+		return TicketAttachmentResponse.builder()
+				.id(attachment.getId())
+				.fileName(attachment.getFileName())
+				.fileType(attachment.getFileType())
+				.fileUrl(attachment.getFileUrl())
+				.publicId(attachment.getPublicId())
+				.uploadedAt(attachment.getUploadedAt())
 				.build();
 	}
 }
