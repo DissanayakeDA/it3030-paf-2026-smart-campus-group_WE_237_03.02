@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "a1b2c3d4-smart-campus-tickets",
 		"name": "Smart Campus - Tickets API",
-		"description": "Incident tickets API (smart-campus-backend). Set `baseUrl` if your app runs on a different host/port. After Create Ticket, copy `id` into `ticketId` for the other requests. PATCH endpoints require `actorRole` ADMIN or TECHNICIAN.",
+		"description": "Incident tickets API (smart-campus-backend). Set `baseUrl` if your app runs on a different host/port. After Create Ticket, copy `id` into `ticketId` for the other requests. PATCH endpoints require `actorRole` ADMIN or TECHNICIAN. Attachments: POST multipart `file` (images only, max 3 per ticket); requires Cloudinary env vars at runtime.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -99,6 +99,36 @@
 				},
 				"url": "{{baseUrl}}/api/tickets/{{ticketId}}/resolution-notes",
 				"description": "PATCH /api/tickets/{id}/resolution-notes — appends resolution notes. Admin or technician only."
+			},
+			"response": []
+		},
+		{
+			"name": "Upload Ticket Attachment",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": []
+						}
+					]
+				},
+				"url": "{{baseUrl}}/api/tickets/{{ticketId}}/attachments",
+				"description": "POST /api/tickets/{ticketId}/attachments — multipart form-data; field name must be `file`. Image content types only; max 3 attachments per ticket. Returns 201 with metadata (Cloudinary URL and publicId)."
+			},
+			"response": []
+		},
+		{
+			"name": "List Ticket Attachments",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "{{baseUrl}}/api/tickets/{{ticketId}}/attachments",
+				"description": "GET /api/tickets/{ticketId}/attachments — list attachment metadata (no binary in DB)."
 			},
 			"response": []
 		}
