@@ -10,6 +10,7 @@ For further reference, please consider the following sections:
 * [Spring Boot DevTools](https://docs.spring.io/spring-boot/4.0.5/reference/using/devtools.html)
 * [OAuth2 Client](https://docs.spring.io/spring-boot/4.0.5/reference/web/spring-security.html#web.security.oauth2.client)
 * [Spring Security](https://docs.spring.io/spring-boot/4.0.5/reference/web/spring-security.html)
+* [SpringDoc OpenAPI](https://springdoc.org/)
 * [Validation](https://docs.spring.io/spring-boot/4.0.5/reference/io/validation.html)
 * [Spring Web](https://docs.spring.io/spring-boot/4.0.5/reference/web/servlet.html)
 
@@ -20,6 +21,7 @@ The following guides illustrate how to use some features concretely:
 * [Securing a Web Application](https://spring.io/guides/gs/securing-web/)
 * [Spring Boot and OAuth2](https://spring.io/guides/tutorials/spring-boot-oauth2/)
 * [Authenticating a User with LDAP](https://spring.io/guides/gs/authenticating-ldap/)
+* [SpringDoc OpenAPI](https://github.com/springdoc/springdoc-openapi-demos/)
 * [Validation](https://spring.io/guides/gs/validating-form-input/)
 * [Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/)
 * [Serving Web Content with Spring MVC](https://spring.io/guides/gs/serving-web-content/)
