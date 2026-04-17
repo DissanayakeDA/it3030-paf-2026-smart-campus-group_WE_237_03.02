@@ -17,4 +17,6 @@ public interface ResourceService {
     ResourceResponse updateResource(Long id, UpdateResourceRequest request);
 
     ResourceResponse updateResourceStatus(Long id, ResourceStatusRequest request);
+
+    void deleteResource(Long id);
 }
