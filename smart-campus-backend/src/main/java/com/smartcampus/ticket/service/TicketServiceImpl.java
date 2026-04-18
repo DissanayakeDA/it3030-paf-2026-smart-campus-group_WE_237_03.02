@@ -54,6 +54,22 @@ public class TicketServiceImpl implements TicketService {
 	private final Cloudinary cloudinary;
 
 	@Override
+	@Transactional(readOnly = true)
+	public List<TicketResponse> getAllTickets(TicketStatus status, Long createdByUserId) {
+		List<Ticket> tickets;
+		if (createdByUserId != null && status != null) {
+			tickets = ticketRepository.findByStatusAndCreatedByUserIdOrderByCreatedAtDesc(status, createdByUserId);
+		} else if (createdByUserId != null) {
+			tickets = ticketRepository.findByCreatedByUserIdOrderByCreatedAtDesc(createdByUserId);
+		} else if (status != null) {
+			tickets = ticketRepository.findByStatusOrderByCreatedAtDesc(status);
+		} else {
+			tickets = ticketRepository.findAllByOrderByCreatedAtDesc();
+		}
+		return tickets.stream().map(this::toResponse).toList();
+	}
+
+	@Override
 	@Transactional
 	public TicketResponse createTicket(CreateTicketRequest request) {
 		Ticket ticket = Ticket.builder()

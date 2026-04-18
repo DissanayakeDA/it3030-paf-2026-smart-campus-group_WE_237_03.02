@@ -1,5 +1,7 @@
 package com.smartcampus.ticket.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -8,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.smartcampus.ticket.dto.AddResolutionNotesRequest;
@@ -17,6 +20,7 @@ import com.smartcampus.ticket.dto.TicketResponse;
 import com.smartcampus.ticket.dto.TicketSlaResponse;
 import com.smartcampus.ticket.dto.TicketSummaryResponse;
 import com.smartcampus.ticket.dto.UpdateTicketStatusRequest;
+import com.smartcampus.ticket.enums.TicketStatus;
 import com.smartcampus.ticket.service.TicketService;
 
 import jakarta.validation.Valid;
@@ -28,6 +32,13 @@ import lombok.RequiredArgsConstructor;
 public class TicketController {
 
 	private final TicketService ticketService;
+
+	@GetMapping
+	public ResponseEntity<List<TicketResponse>> getAllTickets(
+			@RequestParam(required = false) TicketStatus status,
+			@RequestParam(required = false) Long createdByUserId) {
+		return ResponseEntity.ok(ticketService.getAllTickets(status, createdByUserId));
+	}
 
 	@PostMapping
 	public ResponseEntity<TicketResponse> createTicket(@Valid @RequestBody CreateTicketRequest request) {
