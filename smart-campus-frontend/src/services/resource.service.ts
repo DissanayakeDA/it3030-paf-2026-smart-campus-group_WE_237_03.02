@@ -28,4 +28,8 @@ export const resourceService = {
   getById(id: number): Promise<ResourceResponse> {
     return api.get<ResourceResponse>(`${BASE}/${id}`).then(r => r.data);
   },
+
+  update(id: number, data: Record<string, unknown>): Promise<ResourceResponse> {
+    return api.put<ResourceResponse>(`${BASE}/${id}`, data).then(r => r.data);
+  },
 };
