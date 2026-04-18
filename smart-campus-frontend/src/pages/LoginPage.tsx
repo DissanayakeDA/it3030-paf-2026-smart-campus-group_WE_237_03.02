@@ -1,20 +1,37 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
-  const navigate = useNavigate();
+  const { login } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    // Auth integration goes here
-    navigate('/dashboard');
+    setError(null);
+    setLoading(true);
+    try {
+      await login(email, password);
+      // AuthContext.login() navigates to /dashboard on success
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const message = (err.response?.data as { message?: string } | undefined)?.message;
+        setError(message ?? 'Invalid email or password. Please try again.');
+      } else {
+        setError('Invalid email or password. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <div className="min-h-screen bg-[#061A40] flex items-center justify-center px-4">
-      {/* Background accent */}
+      {/* Background accents */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-[#0353A4] opacity-20 blur-3xl" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-[#006DAA] opacity-20 blur-3xl" />
@@ -34,9 +51,15 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <h2 className="text-lg font-semibold text-[#061A40] mb-6">Sign in to your account</h2>
 
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5" htmlFor="email">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Email address
               </label>
               <input
@@ -52,7 +75,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5" htmlFor="password">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Password
               </label>
               <input
@@ -67,22 +90,21 @@ export default function LoginPage() {
               />
             </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 text-gray-600 cursor-pointer">
-                <input type="checkbox" className="rounded border-gray-300 text-[#0353A4]" />
-                Remember me
-              </label>
-              <a href="#" className="text-[#0353A4] hover:underline font-medium">
-                Forgot password?
-              </a>
-            </div>
-
             <button
               type="submit"
+              disabled={loading}
               className="w-full bg-[#0353A4] hover:bg-[#003559] text-white font-semibold py-2.5 rounded-lg
-                text-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#0353A4] focus:ring-offset-2"
+                text-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#0353A4]
+                focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Sign in
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  Signing in…
+                </>
+              ) : (
+                'Sign in'
+              )}
             </button>
           </form>
         </div>
