@@ -17,8 +17,11 @@ import com.smartcampus.ticket.dto.TicketSlaResponse;
 import com.smartcampus.ticket.dto.TicketSummaryResponse;
 import com.smartcampus.ticket.dto.UpdateTicketCommentRequest;
 import com.smartcampus.ticket.dto.UpdateTicketStatusRequest;
+import com.smartcampus.ticket.enums.TicketStatus;
 
 public interface TicketService {
+
+	List<TicketResponse> getAllTickets(TicketStatus status, Long createdByUserId);
 
 	TicketResponse createTicket(CreateTicketRequest request);
 
