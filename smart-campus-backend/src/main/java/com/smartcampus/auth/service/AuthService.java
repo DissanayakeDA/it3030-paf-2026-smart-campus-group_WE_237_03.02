@@ -1,6 +1,8 @@
 package com.smartcampus.auth.service;
 
+import com.smartcampus.auth.dto.AuthResponse;
 import com.smartcampus.auth.dto.LoginRequest;
+import com.smartcampus.auth.dto.RefreshTokenRequest;
 import com.smartcampus.auth.dto.UserDTO;
 import com.smartcampus.auth.entity.User;
 import com.smartcampus.auth.repository.UserRepository;
@@ -19,8 +21,10 @@ public class AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
+    private final JwtService jwtService;
+    private final CustomUserDetailsService userDetailsService;
 
-    public UserDTO login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
@@ -30,7 +34,40 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + request.getEmail()));
 
-        return mapToDTO(user);
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String accessToken = jwtService.generateToken(userDetails);
+        String refreshToken = jwtService.generateRefreshToken(userDetails);
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(mapToDTO(user))
+                .build();
+    }
+
+    public AuthResponse refreshToken(RefreshTokenRequest request) {
+        String userEmail = jwtService.extractUsername(request.getRefreshToken());
+        if (userEmail == null) {
+            throw new RuntimeException("Invalid refresh token");
+        }
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+
+        if (!jwtService.isTokenValid(request.getRefreshToken(), userDetails)) {
+            throw new RuntimeException("Refresh token is expired or invalid");
+        }
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userEmail));
+
+        String accessToken = jwtService.generateToken(userDetails);
+        String refreshToken = jwtService.generateRefreshToken(userDetails);
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(mapToDTO(user))
+                .build();
     }
 
     public UserDTO getCurrentUser() {
