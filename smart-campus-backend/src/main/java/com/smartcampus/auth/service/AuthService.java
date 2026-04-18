@@ -46,10 +46,14 @@ public class AuthService {
     }
 
     public AuthResponse refreshToken(RefreshTokenRequest request) {
-        String userEmail = jwtService.extractUsername(request.getRefreshToken());
-        if (userEmail == null) {
-            throw new RuntimeException("Invalid refresh token");
+        String token = request.getRefreshToken();
+        String type = jwtService.extractType(token);
+        
+        if (!"refresh".equals(type)) {
+            throw new RuntimeException("Invalid token type. Refresh token expected.");
         }
+
+        String userEmail = jwtService.extractUsername(token);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
