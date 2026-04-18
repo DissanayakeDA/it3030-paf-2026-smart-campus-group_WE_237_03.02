@@ -12,8 +12,8 @@ import java.util.List;
 public interface BookingService {
     BookingResponse createBooking(BookingCreateRequest request);
     List<BookingResponse> getMyBookings(Long userId);
-    List<BookingResponse> getAllBookings(BookingStatus status, LocalDate bookingDate, Long resourceId, Long userId, Role actorRole);
-    BookingResponse getBookingById(Long id, Long userId, Role actorRole);
+    List<BookingResponse> getAllBookings(BookingStatus status, LocalDate bookingDate, Long resourceId, Long userId, Role actorRole, Long actingUserId);
+    BookingResponse getBookingById(Long id, Long actingUserId, Role actorRole);
     BookingResponse approveBooking(Long id, BookingReviewRequest request);
     BookingResponse rejectBooking(Long id, BookingReviewRequest request);
     BookingResponse cancelBooking(Long id, BookingReviewRequest request);
