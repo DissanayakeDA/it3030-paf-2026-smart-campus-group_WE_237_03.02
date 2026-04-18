@@ -2,6 +2,8 @@ package com.smartcampus.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -24,22 +26,31 @@ public class SecurityConfig {
 	private final JwtAuthenticationFilter jwtAuthFilter;
 
 	@Bean
+	@Order(1)
+	public SecurityFilterChain authPublicSecurityFilterChain(HttpSecurity http) throws Exception {
+		http
+				.securityMatcher("/auth/login", "/auth/refresh")
+				.cors(cors -> cors.configurationSource(corsConfigurationSource))
+				.csrf(csrf -> csrf.disable())
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+		return http.build();
+	}
+
+	@Bean
+	@Order(2)
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
 				.cors(cors -> cors.configurationSource(corsConfigurationSource))
 				.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
+						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+						.requestMatchers("/auth/login", "/auth/refresh").permitAll()
 						.requestMatchers("/api/tickets/**").permitAll()
 						.requestMatchers("/api/ticket-comments/**").permitAll()
 						.requestMatchers("/api/resources/**").permitAll()
 						.requestMatchers("/api/bookings/**").permitAll()
-						.requestMatchers("/auth/login", "/auth/refresh").permitAll()
-						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/users").permitAll()
-						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/users", "/api/users/").hasAuthority("ROLE_ADMIN")
-						.requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/users/**").hasAuthority("ROLE_ADMIN")
-						.requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/users/*/role").hasAuthority("ROLE_ADMIN")
-						.requestMatchers("/api/users/**").authenticated()
-						.requestMatchers("/auth/me").authenticated()
+						.requestMatchers("/api/users/**").permitAll()
 						.anyRequest().authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -56,4 +67,3 @@ public class SecurityConfig {
 		return config.getAuthenticationManager();
 	}
 }
-
