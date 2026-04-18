@@ -7,11 +7,16 @@ import com.smartcampus.booking.dto.BookingResponse;
 import com.smartcampus.booking.entity.Booking;
 import com.smartcampus.booking.enums.BookingStatus;
 import com.smartcampus.booking.repository.BookingRepository;
+import com.smartcampus.booking.repository.BookingRepository;
+import com.smartcampus.auth.enums.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +54,41 @@ public class BookingServiceImpl implements BookingService {
 
         // Map to response DTO
         return mapToResponse(savedBooking);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getMyBookings(Long userId) {
+        return bookingRepository.findByUser_Id(userId)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getAllBookings(BookingStatus status, LocalDate bookingDate, Long resourceId, Long userId, Role actorRole) {
+        if (actorRole != Role.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can view all bookings");
+        }
+        return bookingRepository.findByFilters(status, bookingDate, resourceId, userId)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BookingResponse getBookingById(Long id, Long userId, Role actorRole) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        // Role-based behavior: USER sees own bookings, ADMIN sees all
+        if (actorRole != Role.ADMIN && !booking.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to view this booking");
+        }
+
+        return mapToResponse(booking);
     }
 
     private BookingResponse mapToResponse(Booking booking) {
