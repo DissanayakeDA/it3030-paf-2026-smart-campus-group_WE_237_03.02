@@ -37,7 +37,7 @@ public class SecurityConfig {
 						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/users").permitAll()
 						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/users", "/api/users/").hasAuthority("ROLE_ADMIN")
 						.requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/users/**").hasAuthority("ROLE_ADMIN")
-						.requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/users/**/role").hasAuthority("ROLE_ADMIN")
+						.requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/users/*/role").hasAuthority("ROLE_ADMIN")
 						.requestMatchers("/api/users/**").authenticated()
 						.requestMatchers("/auth/me").authenticated()
 						.anyRequest().authenticated())

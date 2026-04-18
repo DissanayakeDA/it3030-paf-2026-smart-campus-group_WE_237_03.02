@@ -31,20 +31,21 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (userRepository.findByEmail(adminEmail).isEmpty()) {
-            log.info("No admin user found. Seeding initial admin account: {}", adminEmail);
-            
-            CreateUserRequest adminRequest = CreateUserRequest.builder()
-                    .name(adminName)
-                    .email(adminEmail)
-                    .password(adminPassword)
-                    .role(Role.ADMIN)
-                    .build();
-
-            userService.createUser(adminRequest);
-            log.info("Initial admin user seeded successfully.");
-        } else {
-            log.info("Admin user already exists. Skipping seeding.");
+        if (userRepository.existsByRole(Role.ADMIN)) {
+            log.info("A user with ADMIN role already exists. Skipping seeding.");
+            return;
         }
+
+        log.info("No ADMIN user in database. Seeding initial admin account: {}", adminEmail);
+
+        CreateUserRequest adminRequest = CreateUserRequest.builder()
+                .name(adminName)
+                .email(adminEmail)
+                .password(adminPassword)
+                .role(Role.ADMIN)
+                .build();
+
+        userService.createUser(adminRequest);
+        log.info("Initial admin user seeded successfully.");
     }
 }
