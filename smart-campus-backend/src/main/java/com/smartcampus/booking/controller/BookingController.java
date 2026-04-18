@@ -2,6 +2,7 @@ package com.smartcampus.booking.controller;
 
 import com.smartcampus.booking.dto.BookingCreateRequest;
 import com.smartcampus.booking.dto.BookingResponse;
+import com.smartcampus.booking.dto.BookingReviewRequest;
 import com.smartcampus.booking.enums.BookingStatus;
 import com.smartcampus.booking.service.BookingService;
 import com.smartcampus.auth.enums.Role;
@@ -49,5 +50,19 @@ public class BookingController {
             @RequestParam Long actingUserId,
             @RequestParam Role actorRole) {
         return ResponseEntity.ok(bookingService.getBookingById(id, actingUserId, actorRole));
+    }
+
+    @PatchMapping("/{id}/approve")
+    public ResponseEntity<BookingResponse> approveBooking(
+            @PathVariable Long id,
+            @Valid @RequestBody BookingReviewRequest request) {
+        return ResponseEntity.ok(bookingService.approveBooking(id, request));
+    }
+
+    @PatchMapping("/{id}/reject")
+    public ResponseEntity<BookingResponse> rejectBooking(
+            @PathVariable Long id,
+            @Valid @RequestBody BookingReviewRequest request) {
+        return ResponseEntity.ok(bookingService.rejectBooking(id, request));
     }
 }

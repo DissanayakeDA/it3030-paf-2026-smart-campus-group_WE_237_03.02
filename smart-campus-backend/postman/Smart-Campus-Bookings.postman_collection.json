@@ -118,6 +118,64 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Approve Booking",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"reason\": \"Approved for the requested date.\",\n    \"actingUserId\": 1,\n    \"actorRole\": \"ADMIN\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/bookings/{{bookingId}}/approve",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"bookings",
+						"{{bookingId}}",
+						"approve"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Reject Booking",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"reason\": \"Resource already booked for another event.\",\n    \"actingUserId\": 1,\n    \"actorRole\": \"ADMIN\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/bookings/{{bookingId}}/reject",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"bookings",
+						"{{bookingId}}",
+						"reject"
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"variable": [
