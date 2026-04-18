@@ -7,6 +7,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/tickets': 'Tickets',
   '/tickets/create': 'Create Ticket',
+  '/resources': 'Resources',
+  '/resources/create': 'Add Resource',
 };
 
 function resolveTitle(pathname: string): string {

@@ -5,6 +5,8 @@ import DashboardPage from './pages/DashboardPage';
 import TicketListPage from './pages/TicketListPage';
 import CreateTicketPage from './pages/CreateTicketPage';
 import TicketDetailsPage from './pages/TicketDetailsPage';
+import CreateResourcePage from './pages/CreateResourcePage';
+import ResourceListPage from './pages/ResourceListPage';
 
 export default function App() {
   return (
@@ -20,6 +22,8 @@ export default function App() {
           <Route path="tickets" element={<TicketListPage />} />
           <Route path="tickets/create" element={<CreateTicketPage />} />
           <Route path="tickets/:id" element={<TicketDetailsPage />} />
+          <Route path="resources" element={<ResourceListPage />} />
+          <Route path="resources/create" element={<CreateResourcePage />} />
         </Route>
 
         {/* Fallback */}
