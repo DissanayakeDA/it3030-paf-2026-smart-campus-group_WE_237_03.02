@@ -70,8 +70,6 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
         }
 
-        String userEmail = jwtService.extractUsername(token);
-
         UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
         if (!jwtService.isTokenValid(request.getRefreshToken(), userDetails)) {
