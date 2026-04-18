@@ -9,21 +9,26 @@ import com.smartcampus.ticket.dto.AddResolutionNotesRequest;
 import com.smartcampus.ticket.dto.AddTicketCommentRequest;
 import com.smartcampus.ticket.dto.AssignTechnicianRequest;
 import com.smartcampus.ticket.dto.CreateTicketRequest;
+import com.smartcampus.ticket.dto.DeleteTicketRequest;
 import com.smartcampus.ticket.dto.DeleteTicketCommentRequest;
 import com.smartcampus.ticket.dto.TicketAttachmentResponse;
 import com.smartcampus.ticket.dto.TicketCommentResponse;
 import com.smartcampus.ticket.dto.TicketResponse;
 import com.smartcampus.ticket.dto.TicketSlaResponse;
 import com.smartcampus.ticket.dto.TicketSummaryResponse;
+import com.smartcampus.ticket.dto.UpdateTicketRequest;
 import com.smartcampus.ticket.dto.UpdateTicketCommentRequest;
 import com.smartcampus.ticket.dto.UpdateTicketStatusRequest;
+import com.smartcampus.ticket.enums.ActorRole;
 import com.smartcampus.ticket.enums.TicketStatus;
 
 public interface TicketService {
 
-	List<TicketResponse> getAllTickets(TicketStatus status, Long createdByUserId);
+	List<TicketResponse> getAllTickets(TicketStatus status, Long createdByUserId, Long actingUserId, ActorRole actorRole);
 
 	TicketResponse createTicket(CreateTicketRequest request);
+
+	TicketResponse updateTicket(Long ticketId, UpdateTicketRequest request);
 
 	Optional<TicketResponse> getTicketById(Long id);
 
@@ -44,6 +49,8 @@ public interface TicketService {
 	TicketCommentResponse updateTicketComment(Long commentId, UpdateTicketCommentRequest request);
 
 	void deleteTicketComment(Long commentId, DeleteTicketCommentRequest request);
+
+	void deleteTicket(Long ticketId, DeleteTicketRequest request);
 
 	TicketAttachmentResponse uploadAttachment(Long ticketId, MultipartFile file);
 
