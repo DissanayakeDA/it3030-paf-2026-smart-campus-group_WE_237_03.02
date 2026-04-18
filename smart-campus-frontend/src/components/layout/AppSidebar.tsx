@@ -1,3 +1,4 @@
+import { useAuth } from "../../context/AuthContext";
 import SidebarItem from "./SidebarItem";
 
 function IconDashboard() {
@@ -54,12 +55,41 @@ function IconResource() {
   );
 }
 
+function IconLogout() {
+  return (
+    <svg
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.8}
+      stroke="currentColor"
+      className="w-4 h-4"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
+      />
+    </svg>
+  );
+}
+
 interface AppSidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
 export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
+  const { user, logout } = useAuth();
+
+  const initials = user?.name
+    ? user.name
+        .split(" ")
+        .map((w: string) => w[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "U";
+
   return (
     <>
       {/* Mobile overlay */}
@@ -76,7 +106,7 @@ export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
           ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-[#0353A4] flex-shrink-0">
+        <div className="h-16 flex items-center px-6 border-b border-[#0353A4] shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#0353A4] flex items-center justify-center">
               <span className="text-[#B9D6F2] font-bold text-sm">SC</span>
@@ -95,21 +125,37 @@ export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
             icon={<IconDashboard />}
           />
           <SidebarItem to="/tickets" label="Tickets" icon={<IconTicket />} />
-          <SidebarItem to="/resources" label="Resources" icon={<IconResource />} />
+
+          <SidebarItem
+            to="/resources"
+            label="Resources"
+            icon={<IconResource />}
+          />
         </nav>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-[#0353A4] flex-shrink-0">
+        {/* User footer */}
+        <div className="p-4 border-t border-[#0353A4] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#0353A4] flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-semibold">U</span>
+            <div className="w-8 h-8 rounded-full bg-[#0353A4] flex items-center justify-center shrink-0">
+              <span className="text-white text-xs font-semibold">
+                {initials}
+              </span>
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-white text-sm font-medium truncate">
-                Campus User
+                {user?.name ?? "—"}
               </p>
-              <p className="text-[#B9D6F2] text-xs truncate">user@campus.edu</p>
+              <p className="text-[#B9D6F2] text-xs truncate">
+                {user?.email ?? "—"}
+              </p>
             </div>
+            <button
+              onClick={logout}
+              title="Sign out"
+              className="shrink-0 text-[#B9D6F2] hover:text-white transition-colors"
+            >
+              <IconLogout />
+            </button>
           </div>
         </div>
       </aside>

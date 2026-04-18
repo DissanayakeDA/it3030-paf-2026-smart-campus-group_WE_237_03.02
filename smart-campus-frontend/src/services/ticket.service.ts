@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getApiBaseURL } from '../config/apiBase';
 import type {
   TicketResponse,
   TicketCommentResponse,
@@ -12,18 +13,38 @@ import type {
   AddTicketCommentRequest,
   UpdateTicketCommentRequest,
   DeleteTicketCommentRequest,
+  TicketStatus,
 } from '../types/ticket.types';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080',
+  baseURL: getApiBaseURL(),
   headers: { 'Content-Type': 'application/json' },
+});
+
+// Attach JWT from localStorage on every request
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('sc_access_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
 });
 
 const BASE = '/api/tickets';
 
 // ── Ticket CRUD ───────────────────────────────────────────────────────────────
 
+export type TicketListFilters = {
+  status?: TicketStatus;
+  createdByUserId?: number;
+};
+
 export const ticketService = {
+  getAll(filters?: TicketListFilters): Promise<TicketResponse[]> {
+    const params: Record<string, string | number> = {};
+    if (filters?.status) params.status = filters.status;
+    if (filters?.createdByUserId != null) params.createdByUserId = filters.createdByUserId;
+    return api.get<TicketResponse[]>(BASE, { params }).then(r => r.data);
+  },
+
   create(data: CreateTicketRequest): Promise<TicketResponse> {
     return api.post<TicketResponse>(BASE, data).then(r => r.data);
   },
