@@ -45,12 +45,12 @@ public class SecurityConfig {
 				.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-						.requestMatchers("/auth/login", "/auth/refresh").permitAll()
-						.requestMatchers("/api/tickets/**").permitAll()
-						.requestMatchers("/api/ticket-comments/**").permitAll()
-						.requestMatchers("/api/resources/**").permitAll()
-						.requestMatchers("/api/bookings/**").permitAll()
-						.requestMatchers("/api/users/**").permitAll()
+						.requestMatchers("/auth/login", "/auth/refresh", "/error").permitAll()
+						.requestMatchers("/api/tickets", "/api/tickets/**").permitAll()
+						.requestMatchers("/api/ticket-comments", "/api/ticket-comments/**").permitAll()
+						.requestMatchers("/api/resources", "/api/resources/**").permitAll()
+						.requestMatchers("/api/bookings", "/api/bookings/**").permitAll()
+						.requestMatchers("/api/users", "/api/users/**").permitAll()
 						.anyRequest().authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
