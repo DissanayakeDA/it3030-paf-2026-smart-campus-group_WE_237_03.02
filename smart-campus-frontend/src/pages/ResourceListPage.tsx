@@ -9,27 +9,25 @@ import { resourceService } from '../services/resource.service';
 import type { ResourceStatus, ResourceType } from '../types/resource.types';
 
 const STATUS_STYLES: Record<ResourceStatus, string> = {
-  ACTIVE:
-    'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  OUT_OF_SERVICE:
-    'bg-red-50 text-red-600 border border-red-200',
+  ACTIVE: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  OUT_OF_SERVICE: "bg-red-50 text-red-600 border border-red-200",
 };
 
 const STATUS_DOT: Record<ResourceStatus, string> = {
-  ACTIVE: 'bg-emerald-500',
-  OUT_OF_SERVICE: 'bg-red-500',
+  ACTIVE: "bg-emerald-500",
+  OUT_OF_SERVICE: "bg-red-500",
 };
 
 const STATUS_LABELS: Record<ResourceStatus, string> = {
-  ACTIVE: 'Active',
-  OUT_OF_SERVICE: 'Out of Service',
+  ACTIVE: "Active",
+  OUT_OF_SERVICE: "Out of Service",
 };
 
 const TYPE_LABELS: Record<ResourceType, string> = {
-  LECTURE_HALL: 'Lecture Hall',
-  LAB: 'Lab',
-  MEETING_ROOM: 'Meeting Room',
-  EQUIPMENT: 'Equipment',
+  LECTURE_HALL: "Lecture Hall",
+  LAB: "Lab",
+  MEETING_ROOM: "Meeting Room",
+  EQUIPMENT: "Equipment",
 };
 
 function IconBuilding() {
@@ -70,7 +68,9 @@ function StatCard({
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-2xl font-bold text-[#061A40] leading-none">{value}</p>
+        <p className="text-2xl font-bold text-[#061A40] leading-none">
+          {value}
+        </p>
         <p className="text-xs font-medium text-gray-400 mt-1 uppercase tracking-wide truncate">
           {label}
         </p>
@@ -99,8 +99,10 @@ export default function ResourceListPage() {
   };
 
   const totalCount = resources.length;
-  const activeCount = resources.filter(r => r.status === 'ACTIVE').length;
-  const oosCount = resources.filter(r => r.status === 'OUT_OF_SERVICE').length;
+  const activeCount = resources.filter((r) => r.status === "ACTIVE").length;
+  const oosCount = resources.filter(
+    (r) => r.status === "OUT_OF_SERVICE",
+  ).length;
 
   return (
     <PageContainer>
@@ -108,8 +110,8 @@ export default function ResourceListPage() {
         title="Resources"
         subtitle={
           loading
-            ? 'Loading…'
-            : `${totalCount} resource${totalCount !== 1 ? 's' : ''} registered`
+            ? "Loading…"
+            : `${totalCount} resource${totalCount !== 1 ? "s" : ""} registered`
         }
         action={
           <Link
@@ -123,7 +125,11 @@ export default function ResourceListPage() {
               stroke="currentColor"
               className="w-4 h-4"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4v16m8-8H4"
+              />
             </svg>
             Add Resource
           </Link>
@@ -138,8 +144,18 @@ export default function ResourceListPage() {
             value={totalCount}
             accentColor="bg-blue-50 text-[#0353A4]"
             icon={
-              <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+              <svg
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.8}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"
+                />
               </svg>
             }
           />
@@ -148,8 +164,18 @@ export default function ResourceListPage() {
             value={activeCount}
             accentColor="bg-emerald-50 text-emerald-600"
             icon={
-              <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.8}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             }
           />
@@ -158,8 +184,18 @@ export default function ResourceListPage() {
             value={oosCount}
             accentColor="bg-red-50 text-red-500"
             icon={
-              <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              <svg
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.8}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                />
               </svg>
             }
           />
@@ -190,8 +226,8 @@ export default function ResourceListPage() {
       {!loading && !error && resources.length === 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <EmptyState
-            title="No resources yet"
-            description="Add your first campus facility or equipment to get started."
+            title="No resources available"
+            description="There are no campus facilities or equipment to display right now."
             icon={<IconBuilding />}
             action={
               <Link
@@ -211,7 +247,9 @@ export default function ResourceListPage() {
           {/* Card header */}
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-[#061A40]">All Resources</h3>
+              <h3 className="text-sm font-semibold text-[#061A40]">
+                All Resources
+              </h3>
               <p className="text-xs text-gray-400 mt-0.5">
                 Manage registered campus facilities and equipment
               </p>
@@ -246,7 +284,7 @@ export default function ResourceListPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {resources.map(resource => (
+                {resources.map((resource) => (
                   <tr
                     key={resource.id}
                     className="group hover:bg-blue-50/30 transition-colors duration-150"
@@ -272,7 +310,9 @@ export default function ResourceListPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 hidden md:table-cell">
-                      <span className="text-gray-500 text-[13px]">{resource.location}</span>
+                      <span className="text-gray-500 text-[13px]">
+                        {resource.location}
+                      </span>
                     </td>
                     <td className="px-6 py-4 hidden sm:table-cell">
                       <span className="text-gray-500 font-medium text-[13px]">
@@ -340,7 +380,8 @@ export default function ResourceListPage() {
           {/* Card footer */}
           <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
             <p className="text-xs text-gray-400">
-              Showing {resources.length} resource{resources.length !== 1 ? 's' : ''}
+              Showing {resources.length} resource
+              {resources.length !== 1 ? "s" : ""}
             </p>
           </div>
         </div>

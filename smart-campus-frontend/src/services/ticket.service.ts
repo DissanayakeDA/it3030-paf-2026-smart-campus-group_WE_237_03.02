@@ -7,6 +7,8 @@ import type {
   TicketSlaResponse,
   TicketSummaryResponse,
   CreateTicketRequest,
+  UpdateTicketRequest,
+  DeleteTicketRequest,
   UpdateTicketStatusRequest,
   AssignTechnicianRequest,
   AddResolutionNotesRequest,
@@ -14,6 +16,7 @@ import type {
   UpdateTicketCommentRequest,
   DeleteTicketCommentRequest,
   TicketStatus,
+  ActorRole,
 } from '../types/ticket.types';
 
 const api = axios.create({
@@ -35,6 +38,8 @@ const BASE = '/api/tickets';
 export type TicketListFilters = {
   status?: TicketStatus;
   createdByUserId?: number;
+  actingUserId?: number;
+  actorRole?: ActorRole;
 };
 
 export const ticketService = {
@@ -42,11 +47,21 @@ export const ticketService = {
     const params: Record<string, string | number> = {};
     if (filters?.status) params.status = filters.status;
     if (filters?.createdByUserId != null) params.createdByUserId = filters.createdByUserId;
+    if (filters?.actingUserId != null) params.actingUserId = filters.actingUserId;
+    if (filters?.actorRole) params.actorRole = filters.actorRole;
     return api.get<TicketResponse[]>(BASE, { params }).then(r => r.data);
   },
 
   create(data: CreateTicketRequest): Promise<TicketResponse> {
     return api.post<TicketResponse>(BASE, data).then(r => r.data);
+  },
+
+  update(id: number, data: UpdateTicketRequest): Promise<TicketResponse> {
+    return api.put<TicketResponse>(`${BASE}/${id}`, data).then(r => r.data);
+  },
+
+  delete(id: number, data: DeleteTicketRequest): Promise<void> {
+    return api.delete(`${BASE}/${id}`, { data }).then(() => undefined);
   },
 
   getById(id: number): Promise<TicketResponse> {

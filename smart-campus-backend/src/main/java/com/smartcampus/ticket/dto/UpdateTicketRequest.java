@@ -15,7 +15,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateTicketRequest {
+public class UpdateTicketRequest {
 
 	@NotBlank
 	private String title;
@@ -39,5 +39,5 @@ public class CreateTicketRequest {
 	private String locationText;
 
 	@NotNull
-	private Long createdByUserId;
+	private Long actingUserId;
 }

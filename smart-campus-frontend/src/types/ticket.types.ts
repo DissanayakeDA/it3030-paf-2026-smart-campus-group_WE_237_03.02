@@ -89,6 +89,21 @@ export interface CreateTicketRequest {
   createdByUserId: number;
 }
 
+export interface UpdateTicketRequest {
+  title: string;
+  description: string;
+  category: TicketCategory;
+  priority: TicketPriority;
+  preferredContact: string;
+  resourceId?: number;
+  locationText: string;
+  actingUserId: number;
+}
+
+export interface DeleteTicketRequest {
+  actingUserId: number;
+}
+
 export interface UpdateTicketStatusRequest {
   status: TicketStatus;
   rejectionReason?: string;

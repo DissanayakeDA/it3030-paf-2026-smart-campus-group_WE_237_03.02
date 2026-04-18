@@ -15,4 +15,6 @@ public interface TicketAttachmentRepository extends JpaRepository<TicketAttachme
 
 	@Query("SELECT COUNT(a) FROM TicketAttachment a WHERE a.ticket.id = :ticketId")
 	long countByTicketId(@Param("ticketId") Long ticketId);
+
+	void deleteByTicketId(Long ticketId);
 }

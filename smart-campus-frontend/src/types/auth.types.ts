@@ -7,6 +7,11 @@ export interface UserDTO {
   role: Role;
 }
 
+export interface UserResponse extends UserDTO {
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
