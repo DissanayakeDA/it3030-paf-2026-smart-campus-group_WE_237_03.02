@@ -22,12 +22,14 @@ import com.smartcampus.ticket.dto.AddResolutionNotesRequest;
 import com.smartcampus.ticket.dto.AddTicketCommentRequest;
 import com.smartcampus.ticket.dto.AssignTechnicianRequest;
 import com.smartcampus.ticket.dto.CreateTicketRequest;
+import com.smartcampus.ticket.dto.DeleteTicketRequest;
 import com.smartcampus.ticket.dto.DeleteTicketCommentRequest;
 import com.smartcampus.ticket.dto.TicketAttachmentResponse;
 import com.smartcampus.ticket.dto.TicketCommentResponse;
 import com.smartcampus.ticket.dto.TicketResponse;
 import com.smartcampus.ticket.dto.TicketSlaResponse;
 import com.smartcampus.ticket.dto.TicketSummaryResponse;
+import com.smartcampus.ticket.dto.UpdateTicketRequest;
 import com.smartcampus.ticket.dto.UpdateTicketCommentRequest;
 import com.smartcampus.ticket.dto.UpdateTicketStatusRequest;
 import com.smartcampus.ticket.entity.Ticket;
@@ -54,6 +56,38 @@ public class TicketServiceImpl implements TicketService {
 	private final Cloudinary cloudinary;
 
 	@Override
+	@Transactional(readOnly = true)
+	public List<TicketResponse> getAllTickets(TicketStatus status, Long createdByUserId, Long actingUserId,
+			ActorRole actorRole) {
+		List<Ticket> tickets;
+
+		if (actorRole == ActorRole.ADMIN || actorRole == ActorRole.TECHNICIAN) {
+			if (createdByUserId != null && status != null) {
+				tickets = ticketRepository.findByStatusAndCreatedByUserIdOrderByCreatedAtDesc(status, createdByUserId);
+			} else if (createdByUserId != null) {
+				tickets = ticketRepository.findByCreatedByUserIdOrderByCreatedAtDesc(createdByUserId);
+			} else if (status != null) {
+				tickets = ticketRepository.findByStatusOrderByCreatedAtDesc(status);
+			} else {
+				tickets = ticketRepository.findAllByOrderByCreatedAtDesc();
+			}
+		} else {
+			if (actingUserId == null) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "actingUserId is required for student access");
+			}
+			if (createdByUserId != null && !createdByUserId.equals(actingUserId)) {
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+			}
+			if (status != null) {
+				tickets = ticketRepository.findByStatusAndCreatedByUserIdOrderByCreatedAtDesc(status, actingUserId);
+			} else {
+				tickets = ticketRepository.findByCreatedByUserIdOrderByCreatedAtDesc(actingUserId);
+			}
+		}
+		return tickets.stream().map(this::toResponse).toList();
+	}
+
+	@Override
 	@Transactional
 	public TicketResponse createTicket(CreateTicketRequest request) {
 		Ticket ticket = Ticket.builder()
@@ -69,6 +103,24 @@ public class TicketServiceImpl implements TicketService {
 				.build();
 		Ticket saved = ticketRepository.save(ticket);
 		return toResponse(saved);
+	}
+
+	@Override
+	@Transactional
+	public TicketResponse updateTicket(Long ticketId, UpdateTicketRequest request) {
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		assertTicketOwner(ticket, request.getActingUserId());
+		assertTicketEditable(ticket);
+
+		ticket.setTitle(request.getTitle());
+		ticket.setDescription(request.getDescription());
+		ticket.setCategory(request.getCategory());
+		ticket.setPriority(request.getPriority());
+		ticket.setPreferredContact(request.getPreferredContact());
+		ticket.setResourceId(request.getResourceId());
+		ticket.setLocationText(request.getLocationText());
+		return toResponse(ticketRepository.save(ticket));
 	}
 
 	@Override
@@ -262,6 +314,28 @@ public class TicketServiceImpl implements TicketService {
 		ticketCommentRepository.delete(comment);
 	}
 
+	@Override
+	@Transactional
+	public void deleteTicket(Long ticketId, DeleteTicketRequest request) {
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		assertTicketOwner(ticket, request.getActingUserId());
+		assertTicketDeletable(ticket);
+
+		List<TicketAttachment> attachments = ticketAttachmentRepository.findByTicketId(ticketId);
+		for (TicketAttachment attachment : attachments) {
+			try {
+				cloudinary.uploader().destroy(attachment.getPublicId(), ObjectUtils.emptyMap());
+			} catch (Exception ignored) {
+				// Best effort: still remove ticket data even if remote file cleanup fails.
+			}
+		}
+
+		ticketCommentRepository.deleteByTicketId(ticketId);
+		ticketAttachmentRepository.deleteByTicketId(ticketId);
+		ticketRepository.delete(ticket);
+	}
+
 	private void assertOwnerOrAdmin(TicketComment comment, Long actingUserId, ActorRole actorRole) {
 		if (actorRole == ActorRole.ADMIN) {
 			return;
@@ -275,6 +349,29 @@ public class TicketServiceImpl implements TicketService {
 	private void assertAdminOrTechnician(ActorRole role) {
 		if (role != ActorRole.ADMIN && role != ActorRole.TECHNICIAN) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+		}
+	}
+
+	private void assertTicketOwner(Ticket ticket, Long actingUserId) {
+		if (actingUserId != null && actingUserId.equals(ticket.getCreatedByUserId())) {
+			return;
+		}
+		throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+	}
+
+	private void assertTicketEditable(Ticket ticket) {
+		boolean editable = ticket.getStatus() == TicketStatus.OPEN && ticket.getFirstResponseAt() == null;
+		if (!editable) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT,
+					"Ticket can be edited only before admin/technician response.");
+		}
+	}
+
+	private void assertTicketDeletable(Ticket ticket) {
+		boolean deletable = ticket.getStatus() == TicketStatus.CLOSED || ticket.getStatus() == TicketStatus.REJECTED;
+		if (!deletable) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT,
+					"Ticket can be deleted only when status is CLOSED or REJECTED.");
 		}
 	}
 

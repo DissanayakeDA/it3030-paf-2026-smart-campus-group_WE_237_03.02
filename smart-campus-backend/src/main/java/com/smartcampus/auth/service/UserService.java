@@ -17,5 +17,7 @@ public interface UserService {
 
     UserResponse updateUser(Long id, UpdateUserRequest request);
 
+    UserResponse updateUserRole(Long id, com.smartcampus.auth.enums.Role role);
+
     void deleteUser(Long id);
 }

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -61,7 +62,23 @@ public class ResourceServiceImpl implements ResourceService {
     @Transactional(readOnly = true)
     public List<ResourceResponse> getAllResources(ResourceType type, Integer minCapacity, String location,
             ResourceStatus status) {
-        return resourceRepository.findByFilters(type, minCapacity, location, status)
+        Specification<Resource> spec = (root, query, cb) -> cb.conjunction();
+
+        if (type != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("type"), type));
+        }
+        if (minCapacity != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("capacity"), minCapacity));
+        }
+        if (location != null && !location.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.like(cb.lower(root.get("location")), "%" + location.trim().toLowerCase() + "%"));
+        }
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+
+        return resourceRepository.findAll(spec)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
