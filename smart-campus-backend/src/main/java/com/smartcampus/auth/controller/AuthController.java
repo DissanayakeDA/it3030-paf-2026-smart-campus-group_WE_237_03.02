@@ -1,6 +1,8 @@
 package com.smartcampus.auth.controller;
 
+import com.smartcampus.auth.dto.AuthResponse;
 import com.smartcampus.auth.dto.LoginRequest;
+import com.smartcampus.auth.dto.RefreshTokenRequest;
 import com.smartcampus.auth.dto.UserDTO;
 import com.smartcampus.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -16,8 +18,13 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<UserDTO> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         return ResponseEntity.ok(authService.login(loginRequest));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refreshToken(request));
     }
 
     @GetMapping("/me")
