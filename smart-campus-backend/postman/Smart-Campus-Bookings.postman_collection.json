@@ -32,12 +32,103 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "My Bookings",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/bookings/my?actingUserId=1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"bookings",
+						"my"
+					],
+					"query": [
+						{
+							"key": "actingUserId",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "All Bookings (Admin)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/bookings?actorRole=ADMIN&actingUserId=1&status=PENDING",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"bookings"
+					],
+					"query": [
+						{
+							"key": "actorRole",
+							"value": "ADMIN"
+						},
+						{
+							"key": "actingUserId",
+							"value": "1"
+						},
+						{
+							"key": "status",
+							"value": "PENDING"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Booking Detail",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/bookings/{{bookingId}}?actingUserId=1&actorRole=USER",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"bookings",
+						"{{bookingId}}"
+					],
+					"query": [
+						{
+							"key": "actingUserId",
+							"value": "1"
+						},
+						{
+							"key": "actorRole",
+							"value": "USER"
+						}
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"variable": [
 		{
 			"key": "baseUrl",
 			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "bookingId",
+			"value": "1",
 			"type": "string"
 		}
 	]
