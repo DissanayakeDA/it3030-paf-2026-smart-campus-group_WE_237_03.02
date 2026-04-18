@@ -124,10 +124,10 @@ export default function CreateResourcePage() {
   if (successId !== null) {
     return (
       <PageContainer>
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 flex flex-col items-center gap-5 max-w-md mx-auto mt-8">
-          <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-12 flex flex-col items-center gap-6 max-w-md mx-auto mt-8">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
             <svg
-              className="w-7 h-7 text-green-500"
+              className="w-8 h-8 text-emerald-500"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={2}
@@ -137,22 +137,22 @@ export default function CreateResourcePage() {
             </svg>
           </div>
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-[#061A40]">Resource Created</h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Resource <span className="font-medium text-[#0353A4]">#{successId}</span> has been
+            <h3 className="text-lg font-bold text-[#061A40]">Resource Created</h3>
+            <p className="text-sm text-gray-500 mt-1.5">
+              Resource <span className="font-semibold text-[#0353A4]">#{successId}</span> has been
               added successfully.
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 mt-1">
             <button
               onClick={() => setSuccessId(null)}
-              className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-150"
             >
               Add Another
             </button>
             <Link
               to="/resources"
-              className="px-5 py-2 rounded-lg bg-[#0353A4] text-white text-sm font-medium hover:bg-[#003559] transition-colors"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#0353A4] to-[#003559] text-white text-sm font-semibold shadow-md shadow-[#0353A4]/20 hover:shadow-lg transition-all duration-200"
             >
               View Resources
             </Link>
@@ -170,7 +170,7 @@ export default function CreateResourcePage() {
         action={
           <Link
             to="/resources"
-            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#0353A4] transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#0353A4] transition-colors duration-150"
           >
             <svg
               fill="none"
@@ -191,7 +191,7 @@ export default function CreateResourcePage() {
       />
 
       <form onSubmit={handleSubmit} noValidate>
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
           {/* ── Section 1: Basic Information ── */}
           <div className="px-6 py-4 border-b border-gray-100">
             <h3 className="text-sm font-semibold text-[#061A40]">Basic Information</h3>
@@ -387,14 +387,14 @@ export default function CreateResourcePage() {
             <div className="flex items-center gap-3 ml-auto">
               <Link
                 to="/resources"
-                className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-150"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-[#0353A4] hover:bg-[#003559] text-white text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0353A4] to-[#003559] hover:from-[#003559] hover:to-[#002740] text-white text-sm font-semibold shadow-md shadow-[#0353A4]/20 hover:shadow-lg transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {submitting && (
                   <svg
