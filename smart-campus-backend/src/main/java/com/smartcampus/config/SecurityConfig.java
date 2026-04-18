@@ -15,8 +15,9 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/api/tickets/**").permitAll()
 						.requestMatchers("/api/resources/**").permitAll()
-            .requestMatchers("/api/users/**").permitAll()
-            .requestMatchers("/auth/**").permitAll()
+						.requestMatchers("/api/bookings/**").permitAll()
+						.requestMatchers("/api/users/**").permitAll()
+						.requestMatchers("/auth/**").permitAll()
 						.anyRequest().authenticated());
 		return http.build();
 	}

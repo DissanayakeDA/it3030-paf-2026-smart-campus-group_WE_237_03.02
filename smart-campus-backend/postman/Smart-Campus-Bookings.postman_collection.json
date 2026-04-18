@@ -1,0 +1,135 @@
+{
+	"info": {
+		"_postman_id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+		"name": "Smart-Campus-Bookings",
+		"description": "Collection for testing Booking Management in the Smart Campus project.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create Booking",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"resourceId\": 1,\n    \"userId\": 1,\n    \"bookingDate\": \"2026-05-20\",\n    \"startTime\": \"09:00:00\",\n    \"endTime\": \"11:00:00\",\n    \"purpose\": \"Project group meeting for PAF module\",\n    \"expectedAttendees\": 5\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/bookings",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"bookings"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "My Bookings",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/bookings/my?actingUserId=1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"bookings",
+						"my"
+					],
+					"query": [
+						{
+							"key": "actingUserId",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "All Bookings (Admin)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/bookings?actorRole=ADMIN&actingUserId=1&status=PENDING",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"bookings"
+					],
+					"query": [
+						{
+							"key": "actorRole",
+							"value": "ADMIN"
+						},
+						{
+							"key": "actingUserId",
+							"value": "1"
+						},
+						{
+							"key": "status",
+							"value": "PENDING"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Booking Detail",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/bookings/{{bookingId}}?actingUserId=1&actorRole=USER",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"bookings",
+						"{{bookingId}}"
+					],
+					"query": [
+						{
+							"key": "actingUserId",
+							"value": "1"
+						},
+						{
+							"key": "actorRole",
+							"value": "USER"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "bookingId",
+			"value": "1",
+			"type": "string"
+		}
+	]
+}
