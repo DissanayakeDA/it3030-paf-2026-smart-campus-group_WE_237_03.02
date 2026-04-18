@@ -137,6 +137,33 @@ public class BookingServiceImpl implements BookingService {
         return mapToResponse(bookingRepository.save(booking));
     }
 
+    @Override
+    @Transactional
+    public BookingResponse cancelBooking(Long id, BookingReviewRequest request) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        // Rule: Only APPROVED bookings can be cancelled
+        if (booking.getStatus() != BookingStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only approved bookings can be cancelled");
+        }
+
+        // Rule: USER can cancel own booking, ADMIN can cancel any
+        boolean isOwner = booking.getUser().getId().equals(request.getActingUserId());
+        boolean isAdmin = request.getActorRole() == Role.ADMIN;
+
+        if (!isOwner && !isAdmin) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to cancel this booking");
+        }
+
+        booking.setStatus(BookingStatus.CANCELLED);
+        if (request.getReason() != null) {
+            booking.setAdminReason(request.getReason());
+        }
+
+        return mapToResponse(bookingRepository.save(booking));
+    }
+
     private BookingResponse mapToResponse(Booking booking) {
         return BookingResponse.builder()
                 .id(booking.getId())

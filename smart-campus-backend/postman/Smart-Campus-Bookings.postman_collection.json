@@ -176,6 +176,35 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Cancel Booking",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"reason\": \"Meeting relocated to another venue.\",\n    \"actingUserId\": 1,\n    \"actorRole\": \"USER\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/bookings/{{bookingId}}/cancel",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"bookings",
+						"{{bookingId}}",
+						"cancel"
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"variable": [
