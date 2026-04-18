@@ -32,4 +32,8 @@ export const resourceService = {
   update(id: number, data: Record<string, unknown>): Promise<ResourceResponse> {
     return api.put<ResourceResponse>(`${BASE}/${id}`, data).then(r => r.data);
   },
+
+  delete(id: number): Promise<void> {
+    return api.delete(`${BASE}/${id}`).then(() => undefined);
+  },
 };
