@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -32,6 +33,9 @@ public class BookingServiceImpl implements BookingService {
         if (!request.getEndTime().isAfter(request.getStartTime())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time");
         }
+
+        // Check for conflicts with existing APPROVED bookings
+        checkForConflicts(request.getResourceId(), request.getBookingDate(), request.getStartTime(), request.getEndTime(), -1L);
 
         // Fetch user from repository
         User user = userRepository.findById(request.getUserId())
@@ -67,7 +71,11 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingResponse> getAllBookings(BookingStatus status, LocalDate bookingDate, Long resourceId, Long userId, Role actorRole) {
+    public List<BookingResponse> getAllBookings(BookingStatus status, LocalDate bookingDate, Long resourceId, Long userId, Role actorRole, Long actingUserId) {
+        // Verify user exists
+        userRepository.findById(actingUserId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Acting user not found"));
+
         if (actorRole != Role.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can view all bookings");
         }
@@ -79,12 +87,16 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional(readOnly = true)
-    public BookingResponse getBookingById(Long id, Long userId, Role actorRole) {
+    public BookingResponse getBookingById(Long id, Long actingUserId, Role actorRole) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
 
+        // Verify user exists
+        userRepository.findById(actingUserId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Acting user not found"));
+
         // Role-based behavior: USER sees own bookings, ADMIN sees all
-        if (actorRole != Role.ADMIN && !booking.getUser().getId().equals(userId)) {
+        if (actorRole != Role.ADMIN && !booking.getUser().getId().equals(actingUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to view this booking");
         }
 
@@ -94,6 +106,10 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingResponse approveBooking(Long id, BookingReviewRequest request) {
+        // Verify user exists
+        userRepository.findById(request.getActingUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Acting user not found"));
+
         if (request.getActorRole() != Role.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can approve bookings");
         }
@@ -105,6 +121,9 @@ public class BookingServiceImpl implements BookingService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only pending bookings can be approved");
         }
 
+        // Check for conflicts before approving
+        checkForConflicts(booking.getResourceId(), booking.getBookingDate(), booking.getStartTime(), booking.getEndTime(), id);
+
         booking.setStatus(BookingStatus.APPROVED);
         if (request.getReason() != null) {
             booking.setAdminReason(request.getReason());
@@ -113,9 +132,20 @@ public class BookingServiceImpl implements BookingService {
         return mapToResponse(bookingRepository.save(booking));
     }
 
+    private void checkForConflicts(Long resourceId, LocalDate date, LocalTime start, LocalTime end, Long excludeId) {
+        List<Booking> conflicts = bookingRepository.findOverlappingBookings(resourceId, date, start, end, excludeId);
+        if (!conflicts.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This resource is already booked for the selected time range");
+        }
+    }
+
     @Override
     @Transactional
     public BookingResponse rejectBooking(Long id, BookingReviewRequest request) {
+        // Verify user exists
+        userRepository.findById(request.getActingUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Acting user not found"));
+
         if (request.getActorRole() != Role.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can reject bookings");
         }
@@ -143,12 +173,15 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
 
-        // Rule: Only APPROVED bookings can be cancelled
+        // Step 1: Rule: Only APPROVED bookings can be cancelled
         if (booking.getStatus() != BookingStatus.APPROVED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only approved bookings can be cancelled");
         }
 
-        // Rule: USER can cancel own booking, ADMIN can cancel any
+        // Step 2: Fetch actor and check authorization
+        userRepository.findById(request.getActingUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Acting user not found"));
+
         boolean isOwner = booking.getUser().getId().equals(request.getActingUserId());
         boolean isAdmin = request.getActorRole() == Role.ADMIN;
 

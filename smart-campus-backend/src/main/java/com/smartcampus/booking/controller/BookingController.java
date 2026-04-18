@@ -41,7 +41,7 @@ public class BookingController {
             @RequestParam(required = false) Long userId,
             @RequestParam Role actorRole,
             @RequestParam Long actingUserId) {
-        return ResponseEntity.ok(bookingService.getAllBookings(status, bookingDate, resourceId, userId, actorRole));
+        return ResponseEntity.ok(bookingService.getAllBookings(status, bookingDate, resourceId, userId, actorRole, actingUserId));
     }
 
     @GetMapping("/{id}")

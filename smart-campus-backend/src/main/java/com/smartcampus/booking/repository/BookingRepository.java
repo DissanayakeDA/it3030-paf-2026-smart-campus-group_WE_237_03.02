@@ -38,7 +38,20 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 			"(:userId IS NULL OR b.user.id = :userId)")
 	List<Booking> findByFilters(
 			@Param("status") BookingStatus status,
-			@Param("bookingDate") java.time.LocalDate bookingDate,
+			@Param("bookingDate") LocalDate bookingDate,
 			@Param("resourceId") Long resourceId,
 			@Param("userId") Long userId);
+
+	@Query("SELECT b FROM Booking b WHERE b.resourceId = :resourceId " +
+			"AND b.bookingDate = :bookingDate " +
+			"AND b.status = 'APPROVED' " +
+			"AND b.id <> :excludeId " +
+			"AND b.startTime < :endTime " +
+			"AND b.endTime > :startTime")
+	List<Booking> findOverlappingBookings(
+			@Param("resourceId") Long resourceId,
+			@Param("bookingDate") LocalDate bookingDate,
+			@Param("startTime") java.time.LocalTime startTime,
+			@Param("endTime") java.time.LocalTime endTime,
+			@Param("excludeId") Long excludeId);
 }
