@@ -65,4 +65,11 @@ public class BookingController {
             @Valid @RequestBody BookingReviewRequest request) {
         return ResponseEntity.ok(bookingService.rejectBooking(id, request));
     }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<BookingResponse> cancelBooking(
+            @PathVariable Long id,
+            @Valid @RequestBody BookingReviewRequest request) {
+        return ResponseEntity.ok(bookingService.cancelBooking(id, request));
+    }
 }

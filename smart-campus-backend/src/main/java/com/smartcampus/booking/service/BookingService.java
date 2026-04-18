@@ -16,4 +16,5 @@ public interface BookingService {
     BookingResponse getBookingById(Long id, Long userId, Role actorRole);
     BookingResponse approveBooking(Long id, BookingReviewRequest request);
     BookingResponse rejectBooking(Long id, BookingReviewRequest request);
+    BookingResponse cancelBooking(Long id, BookingReviewRequest request);
 }
