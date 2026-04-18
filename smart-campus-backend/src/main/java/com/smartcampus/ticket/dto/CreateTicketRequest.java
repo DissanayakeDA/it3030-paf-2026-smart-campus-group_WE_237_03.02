@@ -5,6 +5,7 @@ import com.smartcampus.ticket.enums.TicketPriority;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,6 +30,7 @@ public class CreateTicketRequest {
 	private TicketPriority priority;
 
 	@NotBlank
+	@Pattern(regexp = "^\\d{10}$", message = "Phone number must contain exactly 10 digits")
 	private String preferredContact;
 
 	private Long resourceId;

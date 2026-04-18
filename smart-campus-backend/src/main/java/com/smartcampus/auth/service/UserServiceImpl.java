@@ -1,9 +1,11 @@
 package com.smartcampus.auth.service;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -21,18 +23,21 @@ import lombok.RequiredArgsConstructor;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
+
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
         }
 
         User user = User.builder()
                 .name(request.getName())
-                .email(request.getEmail())
-                .password(request.getPassword())
+                .email(normalizedEmail)
+                .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
                 .build();
 
@@ -60,14 +65,26 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        if (!user.getEmail().equals(request.getEmail()) && 
-            userRepository.findByEmail(request.getEmail()).isPresent()) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
+        if (!user.getEmail().equalsIgnoreCase(normalizedEmail)
+                && userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
         }
 
         user.setName(request.getName());
-        user.setEmail(request.getEmail());
+        user.setEmail(normalizedEmail);
         
+        User updatedUser = userRepository.save(user);
+        return toResponse(updatedUser);
+    }
+
+    @Override
+    @Transactional
+    public UserResponse updateUserRole(Long id, com.smartcampus.auth.enums.Role role) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        user.setRole(role);
         User updatedUser = userRepository.save(user);
         return toResponse(updatedUser);
     }
@@ -89,5 +106,9 @@ public class UserServiceImpl implements UserService {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
     }
 }

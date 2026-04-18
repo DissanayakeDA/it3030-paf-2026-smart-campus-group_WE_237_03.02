@@ -14,10 +14,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.smartcampus.auth.dto.CreateUserRequest;
+import com.smartcampus.auth.dto.UpdateRoleRequest;
 import com.smartcampus.auth.dto.UpdateUserRequest;
 import com.smartcampus.auth.dto.UserResponse;
 import com.smartcampus.auth.service.UserService;
 
+import org.springframework.web.bind.annotation.PatchMapping;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -49,6 +51,11 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
         return ResponseEntity.ok(userService.updateUser(id, request));
+    }
+
+    @PatchMapping("/{id}/role")
+    public ResponseEntity<UserResponse> updateUserRole(@PathVariable Long id, @Valid @RequestBody UpdateRoleRequest request) {
+        return ResponseEntity.ok(userService.updateUserRole(id, request.getRole()));
     }
 
     @DeleteMapping("/{id}")
