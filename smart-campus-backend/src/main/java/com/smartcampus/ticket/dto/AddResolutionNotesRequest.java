@@ -1,9 +1,6 @@
 package com.smartcampus.ticket.dto;
 
-import com.smartcampus.ticket.enums.ActorRole;
-
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,10 +14,4 @@ public class AddResolutionNotesRequest {
 
 	@NotBlank
 	private String resolutionNotes;
-
-	@NotNull
-	private Long actingUserId;
-
-	@NotNull
-	private ActorRole actorRole;
 }

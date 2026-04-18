@@ -35,7 +35,4 @@ public class CreateTicketRequest {
 
 	@NotBlank
 	private String locationText;
-
-	@NotNull
-	private Long createdByUserId;
 }

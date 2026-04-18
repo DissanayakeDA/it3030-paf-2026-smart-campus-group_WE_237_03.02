@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.smartcampus.ticket.dto.AddTicketCommentRequest;
-import com.smartcampus.ticket.dto.DeleteTicketCommentRequest;
 import com.smartcampus.ticket.dto.TicketCommentResponse;
 import com.smartcampus.ticket.dto.UpdateTicketCommentRequest;
 import com.smartcampus.ticket.service.TicketService;
@@ -46,9 +45,8 @@ public class TicketCommentController {
 	}
 
 	@DeleteMapping("/api/ticket-comments/{commentId}")
-	public ResponseEntity<Void> deleteComment(@PathVariable Long commentId,
-			@Valid @RequestBody DeleteTicketCommentRequest request) {
-		ticketService.deleteTicketComment(commentId, request);
+	public ResponseEntity<Void> deleteComment(@PathVariable Long commentId) {
+		ticketService.deleteTicketComment(commentId);
 		return ResponseEntity.noContent().build();
 	}
 }

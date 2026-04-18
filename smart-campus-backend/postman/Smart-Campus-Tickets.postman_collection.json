@@ -2,36 +2,106 @@
 	"info": {
 		"_postman_id": "a1b2c3d4-smart-campus-tickets",
 		"name": "Smart Campus - Tickets API",
-		"description": "Incident tickets API (smart-campus-backend). Set `baseUrl` if your app runs on a different host/port. After Create Ticket, copy `id` into `ticketId` for the other requests. PATCH endpoints require `actorRole` ADMIN or TECHNICIAN. Attachments: POST multipart `file` (images only, max 3 per ticket); requires Cloudinary env vars at runtime. SLA: GET ticket SLA metrics (time-to-first-response, time-to-resolution) and GET admin SLA summary (counts and averages).",
+		"description": "Tickets + comments + attachments. **Set `accessToken`** (run **Smart-Campus-Auth-Users → Login** or paste JWT).\n\n- Identity comes from the token (no `actingUserId` / `actorRole` / `createdByUserId` in bodies).\n- **Assign technician:** ADMIN.\n- **Status / resolution notes:** ADMIN or assigned TECHNICIAN.\n- **List tickets:** optional `status`, `createdByUserId` (ADMIN only for filtering other users).\n- **Delete comment:** no body.\n- Attachments: image `file` only, max 3; needs Cloudinary env.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
 	},
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://localhost:8080"
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
 		},
 		{
 			"key": "ticketId",
-			"value": "1"
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "commentId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "technicianUserId",
+			"value": "2",
+			"type": "string",
+			"description": "User id with TECHNICIAN role for assign-technician"
 		}
 	],
 	"item": [
 		{
+			"name": "List Tickets",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/tickets?status=OPEN",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "tickets"],
+					"query": [
+						{
+							"key": "status",
+							"value": "OPEN",
+							"description": "Optional. USER: own tickets; TECHNICIAN: assigned; ADMIN: all or filter."
+						},
+						{
+							"key": "createdByUserId",
+							"value": "",
+							"disabled": true,
+							"description": "ADMIN only — filter by creator"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Create Ticket",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 201) {",
+							"    const j = pm.response.json();",
+							"    if (j.id) pm.collectionVariables.set('ticketId', String(j.id));",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "POST",
 				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
+					{ "key": "Content-Type", "value": "application/json" }
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"title\": \"Projector not turning on in Lab 3\",\n  \"description\": \"Power LED is off; checked power cable and outlet.\",\n  \"category\": \"PROJECTOR\",\n  \"priority\": \"HIGH\",\n  \"preferredContact\": \"email:user@example.com\",\n  \"resourceId\": 42,\n  \"locationText\": \"Building A, Floor 2, Lab 3\",\n  \"createdByUserId\": 1001\n}"
+					"raw": "{\n  \"title\": \"Projector not turning on in Lab 3\",\n  \"description\": \"Power LED is off; checked power cable and outlet.\",\n  \"category\": \"PROJECTOR\",\n  \"priority\": \"HIGH\",\n  \"preferredContact\": \"email:user@gmail.com\",\n  \"resourceId\": 1,\n  \"locationText\": \"Building A, Floor 2, Lab 3\"\n}",
+					"options": { "raw": { "language": "json" } }
 				},
-				"url": "{{baseUrl}}/api/tickets",
-				"description": "POST /api/tickets — creates a ticket with status OPEN."
+				"url": {
+					"raw": "{{baseUrl}}/api/tickets",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "tickets"]
+				},
+				"description": "Reporter is the authenticated user (`createdByUserId` is set server-side). On 201, `ticketId` is saved from response."
 			},
 			"response": []
 		},
@@ -40,8 +110,11 @@
 			"request": {
 				"method": "GET",
 				"header": [],
-				"url": "{{baseUrl}}/api/tickets/{{ticketId}}",
-				"description": "GET /api/tickets/{id} — set `ticketId` in the collection Variables tab (or paste the id from Create Ticket response)."
+				"url": {
+					"raw": "{{baseUrl}}/api/tickets/{{ticketId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "tickets", "{{ticketId}}"]
+				}
 			},
 			"response": []
 		},
@@ -50,8 +123,11 @@
 			"request": {
 				"method": "GET",
 				"header": [],
-				"url": "{{baseUrl}}/api/tickets/{{ticketId}}/sla",
-				"description": "GET /api/tickets/{id}/sla — time-to-first-response and time-to-resolution in minutes (null if firstResponseAt or resolvedAt not set)."
+				"url": {
+					"raw": "{{baseUrl}}/api/tickets/{{ticketId}}/sla",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "tickets", "{{ticketId}}", "sla"]
+				}
 			},
 			"response": []
 		},
@@ -60,27 +136,32 @@
 			"request": {
 				"method": "GET",
 				"header": [],
-				"url": "{{baseUrl}}/api/tickets/admin/sla-summary",
-				"description": "GET /api/tickets/admin/sla-summary — total/open/resolved counts and average first-response and resolution times (minutes)."
+				"url": {
+					"raw": "{{baseUrl}}/api/tickets/admin/sla-summary",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "tickets", "admin", "sla-summary"]
+				},
+				"description": "ADMIN token required."
 			},
 			"response": []
 		},
 		{
-			"name": "Assign Technician",
+			"name": "Assign Technician (ADMIN)",
 			"request": {
 				"method": "PATCH",
 				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
+					{ "key": "Content-Type", "value": "application/json" }
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"technicianId\": 42,\n  \"actingUserId\": 7,\n  \"actorRole\": \"ADMIN\"\n}"
+					"raw": "{\n  \"technicianId\": {{technicianUserId}}\n}",
+					"options": { "raw": { "language": "json" } }
 				},
-				"url": "{{baseUrl}}/api/tickets/{{ticketId}}/assign-technician",
-				"description": "PATCH /api/tickets/{id}/assign-technician — sets assignedTechnicianId. Admin or technician only."
+				"url": {
+					"raw": "{{baseUrl}}/api/tickets/{{ticketId}}/assign-technician",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "tickets", "{{ticketId}}", "assign-technician"]
+				}
 			},
 			"response": []
 		},
@@ -89,17 +170,19 @@
 			"request": {
 				"method": "PATCH",
 				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
+					{ "key": "Content-Type", "value": "application/json" }
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"actingUserId\": 7,\n  \"actorRole\": \"TECHNICIAN\"\n}"
+					"raw": "{\n  \"status\": \"IN_PROGRESS\"\n}",
+					"options": { "raw": { "language": "json" } }
 				},
-				"url": "{{baseUrl}}/api/tickets/{{ticketId}}/status",
-				"description": "PATCH /api/tickets/{id}/status — update status (OPEN, IN_PROGRESS, RESOLVED, CLOSED, REJECTED). For REJECTED, include rejectionReason. Admin or technician only."
+				"url": {
+					"raw": "{{baseUrl}}/api/tickets/{{ticketId}}/status",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "tickets", "{{ticketId}}", "status"]
+				},
+				"description": "ADMIN or assigned TECHNICIAN. Use `REJECTED` + `rejectionReason` when rejecting."
 			},
 			"response": []
 		},
@@ -108,17 +191,99 @@
 			"request": {
 				"method": "PATCH",
 				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
+					{ "key": "Content-Type", "value": "application/json" }
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"resolutionNotes\": \"Replaced projector lamp; verified display output.\",\n  \"actingUserId\": 42,\n  \"actorRole\": \"TECHNICIAN\"\n}"
+					"raw": "{\n  \"resolutionNotes\": \"Replaced projector lamp; verified display output.\"\n}",
+					"options": { "raw": { "language": "json" } }
 				},
-				"url": "{{baseUrl}}/api/tickets/{{ticketId}}/resolution-notes",
-				"description": "PATCH /api/tickets/{id}/resolution-notes — appends resolution notes. Admin or technician only."
+				"url": {
+					"raw": "{{baseUrl}}/api/tickets/{{ticketId}}/resolution-notes",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "tickets", "{{ticketId}}", "resolution-notes"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Comment",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 201) {",
+							"    const j = pm.response.json();",
+							"    if (j.id) pm.collectionVariables.set('commentId', String(j.id));",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"content\": \"Following up on this ticket.\"\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/tickets/{{ticketId}}/comments",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "tickets", "{{ticketId}}", "comments"]
+				},
+				"description": "Author is inferred from JWT. Saves `commentId` on 201."
+			},
+			"response": []
+		},
+		{
+			"name": "List Comments",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/tickets/{{ticketId}}/comments",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "tickets", "{{ticketId}}", "comments"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Comment",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"content\": \"Updated comment text.\"\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/ticket-comments/{{commentId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "ticket-comments", "{{commentId}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Comment (no body)",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/ticket-comments/{{commentId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "ticket-comments", "{{commentId}}"]
+				}
 			},
 			"response": []
 		},
@@ -137,8 +302,11 @@
 						}
 					]
 				},
-				"url": "{{baseUrl}}/api/tickets/{{ticketId}}/attachments",
-				"description": "POST /api/tickets/{ticketId}/attachments — multipart form-data; field name must be `file`. Image content types only; max 3 attachments per ticket. Returns 201 with metadata (Cloudinary URL and publicId)."
+				"url": {
+					"raw": "{{baseUrl}}/api/tickets/{{ticketId}}/attachments",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "tickets", "{{ticketId}}", "attachments"]
+				}
 			},
 			"response": []
 		},
@@ -147,8 +315,11 @@
 			"request": {
 				"method": "GET",
 				"header": [],
-				"url": "{{baseUrl}}/api/tickets/{{ticketId}}/attachments",
-				"description": "GET /api/tickets/{ticketId}/attachments — list attachment metadata (no binary in DB)."
+				"url": {
+					"raw": "{{baseUrl}}/api/tickets/{{ticketId}}/attachments",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "tickets", "{{ticketId}}", "attachments"]
+				}
 			},
 			"response": []
 		}

@@ -4,8 +4,10 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -19,7 +21,6 @@ import com.smartcampus.auth.dto.UpdateUserRequest;
 import com.smartcampus.auth.dto.UserResponse;
 import com.smartcampus.auth.service.UserService;
 
-import org.springframework.web.bind.annotation.PatchMapping;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -28,39 +29,54 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserService userService;
+	private final UserService userService;
 
-    @PostMapping
-    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
-        UserResponse response = userService.createUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
+	@PostMapping
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
+		UserResponse response = userService.createUser(request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
 
-    @GetMapping
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
-    }
+	@GetMapping
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<List<UserResponse>> getAllUsers() {
+		return ResponseEntity.ok(userService.getAllUsers());
+	}
 
-    @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
-        return userService.getUserById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+	@GetMapping("/me")
+	public ResponseEntity<UserResponse> getMyProfile() {
+		return ResponseEntity.ok(userService.getMyProfile());
+	}
 
-    @PutMapping("/{id}")
-    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
-        return ResponseEntity.ok(userService.updateUser(id, request));
-    }
+	@PutMapping("/me")
+	public ResponseEntity<UserResponse> updateMyProfile(@Valid @RequestBody UpdateUserRequest request) {
+		return ResponseEntity.ok(userService.updateMyProfile(request));
+	}
 
-    @PatchMapping("/{id}/role")
-    public ResponseEntity<UserResponse> updateUserRole(@PathVariable Long id, @Valid @RequestBody UpdateRoleRequest request) {
-        return ResponseEntity.ok(userService.updateUserRole(id, request.getRole()));
-    }
+	@GetMapping("/{id}")
+	public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+		return userService.getUserById(id)
+				.map(ResponseEntity::ok)
+				.orElse(ResponseEntity.notFound().build());
+	}
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
-        return ResponseEntity.noContent().build();
-    }
+	@PutMapping("/{id}")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
+		return ResponseEntity.ok(userService.updateUser(id, request));
+	}
+
+	@PatchMapping("/{id}/role")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<UserResponse> updateUserRole(@PathVariable Long id, @Valid @RequestBody UpdateRoleRequest request) {
+		return ResponseEntity.ok(userService.updateUserRole(id, request.getRole()));
+	}
+
+	@DeleteMapping("/{id}")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+		userService.deleteUser(id);
+		return ResponseEntity.noContent().build();
+	}
 }

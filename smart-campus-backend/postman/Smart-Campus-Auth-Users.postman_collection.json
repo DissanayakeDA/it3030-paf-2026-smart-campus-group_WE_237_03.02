@@ -2,104 +2,19 @@
 	"info": {
 		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 		"name": "Smart-Campus-Auth-Users",
-		"description": "User (auth module) API: CRUD on /api/users. Role enum: USER, ADMIN, TECHNICIAN. Note: /auth/** is permitted in security but no /auth endpoints are implemented yet.",
+		"description": "Auth + user management (Spring Security + JWT).\n\n**Setup:**\n1. Set `baseUrl` (default `http://localhost:8080`).\n2. Run **Login** (or **Refresh Token**) — tests auto-save `accessToken` and `refreshToken` to collection variables.\n3. Other requests use Bearer `{{accessToken}}`.\n\n**Rules:** Login/create user emails must be `@gmail.com`. Seeded admin default: `smartcampus.admin@gmail.com` (override `APP_ADMIN_EMAIL`). Only **ADMIN** can `POST/GET all/PATCH role/DELETE` users (except self-service `me`).",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
-	"item": [
-		{
-			"name": "Create User",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"name\": \"Ada Campus\",\n    \"email\": \"ada.campus@example.com\",\n    \"password\": \"changeme123\",\n    \"role\": \"USER\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{baseUrl}}/api/users",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "users"]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Get All Users",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/users",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "users"]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Get User By Id",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/users/{{userId}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "users", "{{userId}}"]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Update User",
-			"request": {
-				"method": "PUT",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"name\": \"Ada Campus Updated\",\n    \"email\": \"ada.updated@example.com\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{baseUrl}}/api/users/{{userId}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "users", "{{userId}}"]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Delete User",
-			"request": {
-				"method": "DELETE",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/users/{{userId}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "users", "{{userId}}"]
-				}
-			},
-			"response": []
-		}
-	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
 	"variable": [
 		{
 			"key": "baseUrl",
@@ -107,9 +22,346 @@
 			"type": "string"
 		},
 		{
-			"key": "userId",
-			"value": "1",
+			"key": "accessToken",
+			"value": "",
 			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "googleIdToken",
+			"value": "",
+			"type": "string",
+			"description": "Paste Google Sign-In credential JWT after configuring GOOGLE_CLIENT_ID on the server."
+		}
+	],
+	"item": [
+		{
+			"name": "1 — Public (no Bearer)",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const j = pm.response.json();",
+									"    if (j.accessToken) pm.collectionVariables.set('accessToken', j.accessToken);",
+									"    if (j.refreshToken) pm.collectionVariables.set('refreshToken', j.refreshToken);",
+									"    pm.test('Has access token', () => pm.expect(j.accessToken).to.be.a('string').and.not.empty);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"smartcampus.admin@gmail.com\",\n    \"password\": \"ChangeMe123!\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						},
+						"description": "Use your real seeded admin @gmail.com + password. On 200, tokens are saved to collection variables."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const j = pm.response.json();",
+									"    if (j.accessToken) pm.collectionVariables.set('accessToken', j.accessToken);",
+									"    if (j.refreshToken) pm.collectionVariables.set('refreshToken', j.refreshToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "refresh"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Google Login (ID token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const j = pm.response.json();",
+									"    if (j.accessToken) pm.collectionVariables.set('accessToken', j.accessToken);",
+									"    if (j.refreshToken) pm.collectionVariables.set('refreshToken', j.refreshToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"idToken\": \"{{googleIdToken}}\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/google",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "google"]
+						},
+						"description": "Requires `GOOGLE_CLIENT_ID` on server. Paste credential JWT into `googleIdToken` variable."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2 — Session (Bearer)",
+			"item": [
+				{
+					"name": "Get Current User (auth/me)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "me"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"currentPassword\": \"ChangeMe123!\",\n    \"newPassword\": \"ChangeMe123!\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/me/password",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "me", "password"]
+						},
+						"description": "Requires `localCredentialsEnabled` (e.g. seeded LOCAL user). Google-only users use **Set local password** first."
+					},
+					"response": []
+				},
+				{
+					"name": "Set Local Password (Google-linked)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"newPassword\": \"LocalPass123456\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/me/local-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "me", "local-password"]
+						},
+						"description": "Only when `localCredentialsEnabled` is false (typical Google-first account). Returns 400 if already enabled."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3 — Users API (Bearer)",
+			"item": [
+				{
+					"name": "Get My Profile (users/me)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "me"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update My Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Administrator Updated\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "me"]
+						},
+						"description": "Email cannot be changed (name only)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create User (ADMIN only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Technician One\",\n    \"email\": \"technician.one@gmail.com\",\n    \"password\": \"Password123456\",\n    \"role\": \"TECHNICIAN\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"]
+						},
+						"description": "Role must be TECHNICIAN or USER. Email must be @gmail.com."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users (ADMIN)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User By Id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "{{userId}}"]
+						},
+						"description": "ADMIN: any id. Others: only own id."
+					},
+					"response": []
+				},
+				{
+					"name": "Update User By Id (ADMIN)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"User Name Updated\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "{{userId}}"]
+						},
+						"description": "Name only (no email in API)."
+					},
+					"response": []
+				},
+				{
+					"name": "Patch User Role (ADMIN)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"role\": \"USER\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}/role",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "{{userId}}", "role"]
+						},
+						"description": "Cannot assign ADMIN via API."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User (ADMIN)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "{{userId}}"]
+						},
+						"description": "Cannot delete self or last ADMIN."
+					},
+					"response": []
+				}
+			]
 		}
 	]
 }

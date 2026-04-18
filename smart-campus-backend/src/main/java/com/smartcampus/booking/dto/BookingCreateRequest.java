@@ -21,9 +21,6 @@ public class BookingCreateRequest {
     @NotNull(message = "Resource ID is required")
     private Long resourceId;
 
-    @NotNull(message = "User ID is required")
-    private Long userId;
-
     @NotNull(message = "Booking date is required")
     @FutureOrPresent(message = "Booking date must be in the present or future")
     private LocalDate bookingDate;

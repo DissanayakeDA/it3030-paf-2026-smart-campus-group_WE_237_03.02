@@ -14,6 +14,8 @@ import com.smartcampus.auth.dto.CreateUserRequest;
 import com.smartcampus.auth.dto.UpdateUserRequest;
 import com.smartcampus.auth.dto.UserResponse;
 import com.smartcampus.auth.entity.User;
+import com.smartcampus.auth.enums.AuthProvider;
+import com.smartcampus.auth.enums.Role;
 import com.smartcampus.auth.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -22,93 +24,121 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+	private final UserRepository userRepository;
+	private final PasswordEncoder passwordEncoder;
+	private final CurrentUserService currentUserService;
 
-    @Override
-    @Transactional
-    public UserResponse createUser(CreateUserRequest request) {
-        String normalizedEmail = normalizeEmail(request.getEmail());
+	@Override
+	@Transactional
+	public UserResponse createUser(CreateUserRequest request) {
+		currentUserService.requireRole(Role.ADMIN);
 
-        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
-        }
+		String normalizedEmail = normalizeEmail(request.getEmail());
 
-        User user = User.builder()
-                .name(request.getName())
-                .email(normalizedEmail)
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
-                .build();
+		if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
+		}
 
-        User savedUser = userRepository.save(user);
-        return toResponse(savedUser);
-    }
+		User user = User.builder()
+				.name(request.getName().trim())
+				.email(normalizedEmail)
+				.password(passwordEncoder.encode(request.getPassword()))
+				.role(request.getRole())
+				.authProvider(AuthProvider.LOCAL)
+				.localCredentialsEnabled(true)
+				.build();
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(this::toResponse)
-                .toList();
-    }
+		User savedUser = userRepository.save(user);
+		return toResponse(savedUser);
+	}
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<UserResponse> getUserById(Long id) {
-        return userRepository.findById(id).map(this::toResponse);
-    }
+	@Override
+	@Transactional(readOnly = true)
+	public List<UserResponse> getAllUsers() {
+		currentUserService.requireRole(Role.ADMIN);
+		return userRepository.findAll().stream()
+				.map(this::toResponse)
+				.toList();
+	}
 
-    @Override
-    @Transactional
-    public UserResponse updateUser(Long id, UpdateUserRequest request) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<UserResponse> getUserById(Long id) {
+		User current = currentUserService.requireUser();
+		if (current.getRole() != Role.ADMIN && !current.getId().equals(id)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only access your own profile");
+		}
+		return userRepository.findById(id).map(this::toResponse);
+	}
 
-        String normalizedEmail = normalizeEmail(request.getEmail());
-        if (!user.getEmail().equalsIgnoreCase(normalizedEmail)
-                && userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
-        }
+	@Override
+	@Transactional(readOnly = true)
+	public UserResponse getMyProfile() {
+		return toResponse(currentUserService.requireUser());
+	}
 
-        user.setName(request.getName());
-        user.setEmail(normalizedEmail);
-        
-        User updatedUser = userRepository.save(user);
-        return toResponse(updatedUser);
-    }
+	@Override
+	@Transactional
+	public UserResponse updateMyProfile(UpdateUserRequest request) {
+		User user = currentUserService.requireUser();
+		user.setName(request.getName().trim());
+		return toResponse(userRepository.save(user));
+	}
 
-    @Override
-    @Transactional
-    public UserResponse updateUserRole(Long id, com.smartcampus.auth.enums.Role role) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+	@Override
+	@Transactional
+	public UserResponse updateUser(Long id, UpdateUserRequest request) {
+		currentUserService.requireRole(Role.ADMIN);
+		User user = userRepository.findById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        user.setRole(role);
-        User updatedUser = userRepository.save(user);
-        return toResponse(updatedUser);
-    }
+		user.setName(request.getName().trim());
+		return toResponse(userRepository.save(user));
+	}
 
-    @Override
-    @Transactional
-    public void deleteUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        userRepository.delete(user);
-    }
+	@Override
+	@Transactional
+	public UserResponse updateUserRole(Long id, Role role) {
+		currentUserService.requireRole(Role.ADMIN);
+		if (role == Role.ADMIN) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ADMIN role cannot be assigned through this API");
+		}
+		User user = userRepository.findById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-    private UserResponse toResponse(User user) {
-        return UserResponse.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
-                .build();
-    }
+		user.setRole(role);
+		User updatedUser = userRepository.save(user);
+		return toResponse(updatedUser);
+	}
 
-    private String normalizeEmail(String email) {
-        return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
-    }
+	@Override
+	@Transactional
+	public void deleteUser(Long id) {
+		currentUserService.requireRole(Role.ADMIN);
+		User actor = currentUserService.requireUser();
+		if (actor.getId().equals(id)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot delete your own account");
+		}
+		User user = userRepository.findById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		if (user.getRole() == Role.ADMIN && userRepository.countByRole(Role.ADMIN) <= 1) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete the last ADMIN account");
+		}
+		userRepository.delete(user);
+	}
+
+	private UserResponse toResponse(User user) {
+		return UserResponse.builder()
+				.id(user.getId())
+				.name(user.getName())
+				.email(user.getEmail())
+				.role(user.getRole())
+				.createdAt(user.getCreatedAt())
+				.updatedAt(user.getUpdatedAt())
+				.build();
+	}
+
+	private String normalizeEmail(String email) {
+		return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
+	}
 }

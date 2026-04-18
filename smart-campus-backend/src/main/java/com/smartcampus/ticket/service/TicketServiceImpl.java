@@ -18,11 +18,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.smartcampus.auth.entity.User;
+import com.smartcampus.auth.enums.Role;
+import com.smartcampus.auth.service.CurrentUserService;
 import com.smartcampus.ticket.dto.AddResolutionNotesRequest;
 import com.smartcampus.ticket.dto.AddTicketCommentRequest;
 import com.smartcampus.ticket.dto.AssignTechnicianRequest;
 import com.smartcampus.ticket.dto.CreateTicketRequest;
-import com.smartcampus.ticket.dto.DeleteTicketCommentRequest;
 import com.smartcampus.ticket.dto.TicketAttachmentResponse;
 import com.smartcampus.ticket.dto.TicketCommentResponse;
 import com.smartcampus.ticket.dto.TicketResponse;
@@ -33,7 +35,6 @@ import com.smartcampus.ticket.dto.UpdateTicketStatusRequest;
 import com.smartcampus.ticket.entity.Ticket;
 import com.smartcampus.ticket.entity.TicketAttachment;
 import com.smartcampus.ticket.entity.TicketComment;
-import com.smartcampus.ticket.enums.ActorRole;
 import com.smartcampus.ticket.enums.TicketStatus;
 import com.smartcampus.ticket.repository.TicketAttachmentRepository;
 import com.smartcampus.ticket.repository.TicketCommentRepository;
@@ -46,25 +47,41 @@ import lombok.RequiredArgsConstructor;
 public class TicketServiceImpl implements TicketService {
 
 	private final TicketRepository ticketRepository;
-
 	private final TicketCommentRepository ticketCommentRepository;
-
 	private final TicketAttachmentRepository ticketAttachmentRepository;
-
 	private final Cloudinary cloudinary;
+	private final CurrentUserService currentUserService;
 
 	@Override
 	@Transactional(readOnly = true)
 	public List<TicketResponse> getAllTickets(TicketStatus status, Long createdByUserId) {
+		User user = currentUserService.requireUser();
 		List<Ticket> tickets;
-		if (createdByUserId != null && status != null) {
-			tickets = ticketRepository.findByStatusAndCreatedByUserIdOrderByCreatedAtDesc(status, createdByUserId);
-		} else if (createdByUserId != null) {
-			tickets = ticketRepository.findByCreatedByUserIdOrderByCreatedAtDesc(createdByUserId);
-		} else if (status != null) {
-			tickets = ticketRepository.findByStatusOrderByCreatedAtDesc(status);
+		if (user.getRole() == Role.ADMIN) {
+			if (createdByUserId != null && status != null) {
+				tickets = ticketRepository.findByStatusAndCreatedByUserIdOrderByCreatedAtDesc(status, createdByUserId);
+			} else if (createdByUserId != null) {
+				tickets = ticketRepository.findByCreatedByUserIdOrderByCreatedAtDesc(createdByUserId);
+			} else if (status != null) {
+				tickets = ticketRepository.findByStatusOrderByCreatedAtDesc(status);
+			} else {
+				tickets = ticketRepository.findAllByOrderByCreatedAtDesc();
+			}
+		} else if (user.getRole() == Role.TECHNICIAN) {
+			if (status != null) {
+				tickets = ticketRepository.findByAssignedTechnicianIdAndStatusOrderByCreatedAtDesc(user.getId(), status);
+			} else {
+				tickets = ticketRepository.findByAssignedTechnicianIdOrderByCreatedAtDesc(user.getId());
+			}
 		} else {
-			tickets = ticketRepository.findAllByOrderByCreatedAtDesc();
+			if (createdByUserId != null && !createdByUserId.equals(user.getId())) {
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You may only list your own tickets");
+			}
+			if (status != null) {
+				tickets = ticketRepository.findByStatusAndCreatedByUserIdOrderByCreatedAtDesc(status, user.getId());
+			} else {
+				tickets = ticketRepository.findByCreatedByUserIdOrderByCreatedAtDesc(user.getId());
+			}
 		}
 		return tickets.stream().map(this::toResponse).toList();
 	}
@@ -72,6 +89,7 @@ public class TicketServiceImpl implements TicketService {
 	@Override
 	@Transactional
 	public TicketResponse createTicket(CreateTicketRequest request) {
+		User user = currentUserService.requireUser();
 		Ticket ticket = Ticket.builder()
 				.title(request.getTitle())
 				.description(request.getDescription())
@@ -80,7 +98,7 @@ public class TicketServiceImpl implements TicketService {
 				.preferredContact(request.getPreferredContact())
 				.resourceId(request.getResourceId())
 				.locationText(request.getLocationText())
-				.createdByUserId(request.getCreatedByUserId())
+				.createdByUserId(user.getId())
 				.status(TicketStatus.OPEN)
 				.build();
 		Ticket saved = ticketRepository.save(ticket);
@@ -90,18 +108,27 @@ public class TicketServiceImpl implements TicketService {
 	@Override
 	@Transactional(readOnly = true)
 	public Optional<TicketResponse> getTicketById(Long id) {
-		return ticketRepository.findById(id).map(this::toResponse);
+		User user = currentUserService.requireUser();
+		return ticketRepository.findById(id).map(t -> {
+			assertCanViewTicket(user, t);
+			return toResponse(t);
+		});
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public Optional<TicketSlaResponse> getTicketSla(Long id) {
-		return ticketRepository.findById(id).map(this::toSlaResponse);
+		User user = currentUserService.requireUser();
+		return ticketRepository.findById(id).map(t -> {
+			assertCanViewTicket(user, t);
+			return toSlaResponse(t);
+		});
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public TicketSummaryResponse getSlaSummary() {
+		currentUserService.requireRole(Role.ADMIN);
 		Set<TicketStatus> resolvedStatuses = EnumSet.of(TicketStatus.RESOLVED, TicketStatus.CLOSED);
 		long totalTickets = ticketRepository.count();
 		long resolvedTickets = ticketRepository.countByStatusIn(resolvedStatuses);
@@ -125,7 +152,7 @@ public class TicketServiceImpl implements TicketService {
 	@Override
 	@Transactional
 	public TicketResponse assignTechnician(Long ticketId, AssignTechnicianRequest request) {
-		assertAdminOrTechnician(request.getActorRole());
+		currentUserService.requireRole(Role.ADMIN);
 		Ticket ticket = ticketRepository.findById(ticketId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 		ticket.setAssignedTechnicianId(request.getTechnicianId());
@@ -136,7 +163,8 @@ public class TicketServiceImpl implements TicketService {
 	@Override
 	@Transactional
 	public TicketResponse updateTicketStatus(Long ticketId, UpdateTicketStatusRequest request) {
-		assertAdminOrTechnician(request.getActorRole());
+		User user = currentUserService.requireUser();
+		assertAdminOrAssignedTechnician(user, ticketId);
 		Ticket ticket = ticketRepository.findById(ticketId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 		TicketStatus previous = ticket.getStatus();
@@ -163,7 +191,8 @@ public class TicketServiceImpl implements TicketService {
 	@Override
 	@Transactional
 	public TicketResponse addResolutionNotes(Long ticketId, AddResolutionNotesRequest request) {
-		assertAdminOrTechnician(request.getActorRole());
+		User user = currentUserService.requireUser();
+		assertAdminOrAssignedTechnician(user, ticketId);
 		Ticket ticket = ticketRepository.findById(ticketId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 		String incoming = request.getResolutionNotes();
@@ -179,11 +208,13 @@ public class TicketServiceImpl implements TicketService {
 	@Override
 	@Transactional
 	public TicketCommentResponse addTicketComment(Long ticketId, AddTicketCommentRequest request) {
+		User user = currentUserService.requireUser();
 		Ticket ticket = ticketRepository.findById(ticketId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		assertCanComment(user, ticket);
 		TicketComment comment = TicketComment.builder()
 				.ticket(ticket)
-				.authorUserId(request.getAuthorUserId())
+				.authorUserId(user.getId())
 				.content(request.getContent())
 				.build();
 		TicketComment saved = ticketCommentRepository.save(comment);
@@ -193,9 +224,10 @@ public class TicketServiceImpl implements TicketService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<TicketCommentResponse> listTicketComments(Long ticketId) {
-		if (!ticketRepository.existsById(ticketId)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-		}
+		User user = currentUserService.requireUser();
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		assertCanViewTicket(user, ticket);
 		return ticketCommentRepository.findByTicketIdOrderByCreatedAtAsc(ticketId).stream()
 				.map(this::toCommentResponse)
 				.toList();
@@ -204,18 +236,35 @@ public class TicketServiceImpl implements TicketService {
 	@Override
 	@Transactional
 	public TicketCommentResponse updateTicketComment(Long commentId, UpdateTicketCommentRequest request) {
+		User user = currentUserService.requireUser();
 		TicketComment comment = ticketCommentRepository.findById(commentId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-		assertOwnerOrAdmin(comment, request.getActingUserId(), request.getActorRole());
+		Ticket ticket = comment.getTicket();
+		assertCanViewTicket(user, ticket);
+		assertCanModifyComment(user, ticket, comment);
 		comment.setContent(request.getContent());
 		return toCommentResponse(ticketCommentRepository.save(comment));
 	}
 
 	@Override
 	@Transactional
+	public void deleteTicketComment(Long commentId) {
+		User user = currentUserService.requireUser();
+		TicketComment comment = ticketCommentRepository.findById(commentId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		Ticket ticket = comment.getTicket();
+		assertCanViewTicket(user, ticket);
+		assertCanModifyComment(user, ticket, comment);
+		ticketCommentRepository.delete(comment);
+	}
+
+	@Override
+	@Transactional
 	public TicketAttachmentResponse uploadAttachment(Long ticketId, MultipartFile file) {
+		User user = currentUserService.requireUser();
 		Ticket ticket = ticketRepository.findById(ticketId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		assertCanViewTicket(user, ticket);
 		if (file == null || file.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
 		}
@@ -261,36 +310,70 @@ public class TicketServiceImpl implements TicketService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<TicketAttachmentResponse> getAttachmentsByTicket(Long ticketId) {
-		if (!ticketRepository.existsById(ticketId)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-		}
+		User user = currentUserService.requireUser();
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		assertCanViewTicket(user, ticket);
 		return ticketAttachmentRepository.findByTicketId(ticketId).stream()
 				.map(this::toAttachmentResponse)
 				.toList();
 	}
 
-	@Override
-	@Transactional
-	public void deleteTicketComment(Long commentId, DeleteTicketCommentRequest request) {
-		TicketComment comment = ticketCommentRepository.findById(commentId)
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-		assertOwnerOrAdmin(comment, request.getActingUserId(), request.getActorRole());
-		ticketCommentRepository.delete(comment);
-	}
-
-	private void assertOwnerOrAdmin(TicketComment comment, Long actingUserId, ActorRole actorRole) {
-		if (actorRole == ActorRole.ADMIN) {
+	private void assertCanViewTicket(User user, Ticket ticket) {
+		if (user.getRole() == Role.ADMIN) {
 			return;
 		}
-		if (actingUserId != null && actingUserId.equals(comment.getAuthorUserId())) {
+		if (user.getRole() == Role.TECHNICIAN) {
+			if (ticket.getAssignedTechnicianId() != null && ticket.getAssignedTechnicianId().equals(user.getId())) {
+				return;
+			}
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ticket is not assigned to you");
+		}
+		if (user.getRole() == Role.USER && ticket.getCreatedByUserId().equals(user.getId())) {
 			return;
 		}
-		throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+		throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot access this ticket");
 	}
 
-	private void assertAdminOrTechnician(ActorRole role) {
-		if (role != ActorRole.ADMIN && role != ActorRole.TECHNICIAN) {
+	private void assertCanComment(User user, Ticket ticket) {
+		if (user.getRole() == Role.ADMIN) {
+			return;
+		}
+		if (user.getRole() == Role.TECHNICIAN
+				&& ticket.getAssignedTechnicianId() != null
+				&& ticket.getAssignedTechnicianId().equals(user.getId())) {
+			return;
+		}
+		if (user.getRole() == Role.USER && ticket.getCreatedByUserId().equals(user.getId())) {
+			return;
+		}
+		throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot comment on this ticket");
+	}
+
+	private void assertAdminOrAssignedTechnician(User user, Long ticketId) {
+		if (user.getRole() == Role.ADMIN) {
+			return;
+		}
+		if (user.getRole() != Role.TECHNICIAN) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+		}
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		if (ticket.getAssignedTechnicianId() == null || !ticket.getAssignedTechnicianId().equals(user.getId())) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ticket is not assigned to you");
+		}
+	}
+
+	private void assertCanModifyComment(User user, Ticket ticket, TicketComment comment) {
+		if (user.getRole() == Role.ADMIN) {
+			return;
+		}
+		if (!comment.getAuthorUserId().equals(user.getId())) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only modify your own comments");
+		}
+		if (user.getRole() == Role.USER && ticket.getFirstResponseAt() != null) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+					"Comments cannot be changed after staff have responded");
 		}
 	}
 

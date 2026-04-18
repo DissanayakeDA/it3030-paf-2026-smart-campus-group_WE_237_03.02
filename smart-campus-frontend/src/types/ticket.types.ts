@@ -19,10 +19,7 @@ export type TicketCategory =
   | 'FURNITURE'
   | 'OTHER';
 
-export type ActorRole = 'ADMIN' | 'TECHNICIAN' | 'STUDENT';
-
 // ── Response DTOs ─────────────────────────────────────────────────────────────
-// Java Instant fields are serialised as ISO-8601 strings by Jackson.
 
 export interface TicketResponse {
   id: number;
@@ -86,40 +83,25 @@ export interface CreateTicketRequest {
   preferredContact: string;
   resourceId?: number;
   locationText: string;
-  createdByUserId: number;
 }
 
 export interface UpdateTicketStatusRequest {
   status: TicketStatus;
   rejectionReason?: string;
-  actingUserId: number;
-  actorRole: ActorRole;
 }
 
 export interface AssignTechnicianRequest {
   technicianId: number;
-  actingUserId: number;
-  actorRole: ActorRole;
 }
 
 export interface AddResolutionNotesRequest {
   resolutionNotes: string;
-  actingUserId: number;
-  actorRole: ActorRole;
 }
 
 export interface AddTicketCommentRequest {
   content: string;
-  authorUserId: number;
 }
 
 export interface UpdateTicketCommentRequest {
   content: string;
-  actingUserId: number;
-  actorRole: ActorRole;
-}
-
-export interface DeleteTicketCommentRequest {
-  actingUserId: number;
-  actorRole: ActorRole;
 }

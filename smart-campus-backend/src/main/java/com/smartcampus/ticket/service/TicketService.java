@@ -9,7 +9,6 @@ import com.smartcampus.ticket.dto.AddResolutionNotesRequest;
 import com.smartcampus.ticket.dto.AddTicketCommentRequest;
 import com.smartcampus.ticket.dto.AssignTechnicianRequest;
 import com.smartcampus.ticket.dto.CreateTicketRequest;
-import com.smartcampus.ticket.dto.DeleteTicketCommentRequest;
 import com.smartcampus.ticket.dto.TicketAttachmentResponse;
 import com.smartcampus.ticket.dto.TicketCommentResponse;
 import com.smartcampus.ticket.dto.TicketResponse;
@@ -43,7 +42,7 @@ public interface TicketService {
 
 	TicketCommentResponse updateTicketComment(Long commentId, UpdateTicketCommentRequest request);
 
-	void deleteTicketComment(Long commentId, DeleteTicketCommentRequest request);
+	void deleteTicketComment(Long commentId);
 
 	TicketAttachmentResponse uploadAttachment(Long ticketId, MultipartFile file);
 

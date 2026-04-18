@@ -2,33 +2,53 @@
 	"info": {
 		"_postman_id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
 		"name": "Smart-Campus-Bookings",
-		"description": "Collection for testing Booking Management in the Smart Campus project.",
+		"description": "Bookings API with JWT. **Run `Smart-Campus-Auth-Users` → Login** first, then copy `accessToken` into this collection's `accessToken` variable (or duplicate the Login request here).\n\n- **Create / my / detail / cancel:** any authenticated user; booking owner is inferred from the token.\n- **List all / approve / reject:** ADMIN only.\n- Create body **no longer includes `userId`** — the current user is used.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "bookingId",
+			"value": "1",
+			"type": "string"
+		}
+	],
 	"item": [
 		{
 			"name": "Create Booking",
 			"request": {
 				"method": "POST",
-				"header": [],
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"resourceId\": 1,\n    \"userId\": 1,\n    \"bookingDate\": \"2026-05-20\",\n    \"startTime\": \"09:00:00\",\n    \"endTime\": \"11:00:00\",\n    \"purpose\": \"Project group meeting for PAF module\",\n    \"expectedAttendees\": 5\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
+					"raw": "{\n    \"resourceId\": 1,\n    \"bookingDate\": \"2026-05-20\",\n    \"startTime\": \"09:00:00\",\n    \"endTime\": \"11:00:00\",\n    \"purpose\": \"Project group meeting for PAF module\",\n    \"expectedAttendees\": 5\n}",
+					"options": { "raw": { "language": "json" } }
 				},
 				"url": {
 					"raw": "{{baseUrl}}/api/bookings",
-					"host": [
-						"{{baseUrl}}"
-					],
-					"path": [
-						"api",
-						"bookings"
-					]
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "bookings"]
 				}
 			},
 			"response": []
@@ -39,54 +59,47 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/api/bookings/my?actingUserId=1",
-					"host": [
-						"{{baseUrl}}"
-					],
-					"path": [
-						"api",
-						"bookings",
-						"my"
-					],
-					"query": [
-						{
-							"key": "actingUserId",
-							"value": "1"
-						}
-					]
-				}
+					"raw": "{{baseUrl}}/api/bookings/my",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "bookings", "my"]
+				},
+				"description": "No query params — returns bookings for the authenticated user."
 			},
 			"response": []
 		},
 		{
-			"name": "All Bookings (Admin)",
+			"name": "All Bookings (ADMIN)",
 			"request": {
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/api/bookings?actorRole=ADMIN&actingUserId=1&status=PENDING",
-					"host": [
-						"{{baseUrl}}"
-					],
-					"path": [
-						"api",
-						"bookings"
-					],
+					"raw": "{{baseUrl}}/api/bookings?status=PENDING",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "bookings"],
 					"query": [
 						{
-							"key": "actorRole",
-							"value": "ADMIN"
-						},
-						{
-							"key": "actingUserId",
-							"value": "1"
-						},
-						{
 							"key": "status",
-							"value": "PENDING"
+							"value": "PENDING",
+							"description": "Optional: PENDING, APPROVED, REJECTED, CANCELLED"
+						},
+						{
+							"key": "bookingDate",
+							"value": "",
+							"disabled": true
+						},
+						{
+							"key": "resourceId",
+							"value": "",
+							"disabled": true
+						},
+						{
+							"key": "userId",
+							"value": "",
+							"disabled": true
 						}
 					]
-				}
+				},
+				"description": "ADMIN only. Optional filters: status, bookingDate, resourceId, userId."
 			},
 			"response": []
 		},
@@ -96,84 +109,52 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/api/bookings/{{bookingId}}?actingUserId=1&actorRole=USER",
-					"host": [
-						"{{baseUrl}}"
-					],
-					"path": [
-						"api",
-						"bookings",
-						"{{bookingId}}"
-					],
-					"query": [
-						{
-							"key": "actingUserId",
-							"value": "1"
-						},
-						{
-							"key": "actorRole",
-							"value": "USER"
-						}
-					]
-				}
+					"raw": "{{baseUrl}}/api/bookings/{{bookingId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "bookings", "{{bookingId}}"]
+				},
+				"description": "Owner or ADMIN."
 			},
 			"response": []
 		},
 		{
-			"name": "Approve Booking",
+			"name": "Approve Booking (ADMIN)",
 			"request": {
 				"method": "PATCH",
-				"header": [],
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"reason\": \"Approved for the requested date.\",\n    \"actingUserId\": 1,\n    \"actorRole\": \"ADMIN\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
+					"raw": "{\n    \"reason\": \"Approved for the requested date.\"\n}",
+					"options": { "raw": { "language": "json" } }
 				},
 				"url": {
 					"raw": "{{baseUrl}}/api/bookings/{{bookingId}}/approve",
-					"host": [
-						"{{baseUrl}}"
-					],
-					"path": [
-						"api",
-						"bookings",
-						"{{bookingId}}",
-						"approve"
-					]
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "bookings", "{{bookingId}}", "approve"]
 				}
 			},
 			"response": []
 		},
 		{
-			"name": "Reject Booking",
+			"name": "Reject Booking (ADMIN)",
 			"request": {
 				"method": "PATCH",
-				"header": [],
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"reason\": \"Resource already booked for another event.\",\n    \"actingUserId\": 1,\n    \"actorRole\": \"ADMIN\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
+					"raw": "{\n    \"reason\": \"Resource already booked for another event.\"\n}",
+					"options": { "raw": { "language": "json" } }
 				},
 				"url": {
 					"raw": "{{baseUrl}}/api/bookings/{{bookingId}}/reject",
-					"host": [
-						"{{baseUrl}}"
-					],
-					"path": [
-						"api",
-						"bookings",
-						"{{bookingId}}",
-						"reject"
-					]
-				}
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "bookings", "{{bookingId}}", "reject"]
+				},
+				"description": "`reason` is required for reject."
 			},
 			"response": []
 		},
@@ -181,42 +162,22 @@
 			"name": "Cancel Booking",
 			"request": {
 				"method": "PATCH",
-				"header": [],
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"reason\": \"Meeting relocated to another venue.\",\n    \"actingUserId\": 1,\n    \"actorRole\": \"USER\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
+					"raw": "{\n    \"reason\": \"Meeting relocated to another venue.\"\n}",
+					"options": { "raw": { "language": "json" } }
 				},
 				"url": {
 					"raw": "{{baseUrl}}/api/bookings/{{bookingId}}/cancel",
-					"host": [
-						"{{baseUrl}}"
-					],
-					"path": [
-						"api",
-						"bookings",
-						"{{bookingId}}",
-						"cancel"
-					]
-				}
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "bookings", "{{bookingId}}", "cancel"]
+				},
+				"description": "Owner of approved booking or ADMIN."
 			},
 			"response": []
-		}
-	],
-	"variable": [
-		{
-			"key": "baseUrl",
-			"value": "http://localhost:8080",
-			"type": "string"
-		},
-		{
-			"key": "bookingId",
-			"value": "1",
-			"type": "string"
 		}
 	]
 }

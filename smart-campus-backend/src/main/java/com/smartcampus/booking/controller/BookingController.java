@@ -5,11 +5,11 @@ import com.smartcampus.booking.dto.BookingResponse;
 import com.smartcampus.booking.dto.BookingReviewRequest;
 import com.smartcampus.booking.enums.BookingStatus;
 import com.smartcampus.booking.service.BookingService;
-import com.smartcampus.auth.enums.Role;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -29,30 +29,27 @@ public class BookingController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<List<BookingResponse>> getMyBookings(@RequestParam Long actingUserId) {
-        return ResponseEntity.ok(bookingService.getMyBookings(actingUserId));
+    public ResponseEntity<List<BookingResponse>> getMyBookings() {
+        return ResponseEntity.ok(bookingService.getMyBookings());
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<BookingResponse>> getAllBookings(
             @RequestParam(required = false) BookingStatus status,
             @RequestParam(required = false) LocalDate bookingDate,
             @RequestParam(required = false) Long resourceId,
-            @RequestParam(required = false) Long userId,
-            @RequestParam Role actorRole,
-            @RequestParam Long actingUserId) {
-        return ResponseEntity.ok(bookingService.getAllBookings(status, bookingDate, resourceId, userId, actorRole, actingUserId));
+            @RequestParam(required = false) Long userId) {
+        return ResponseEntity.ok(bookingService.getAllBookings(status, bookingDate, resourceId, userId));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookingResponse> getBookingById(
-            @PathVariable Long id,
-            @RequestParam Long actingUserId,
-            @RequestParam Role actorRole) {
-        return ResponseEntity.ok(bookingService.getBookingById(id, actingUserId, actorRole));
+    public ResponseEntity<BookingResponse> getBookingById(@PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.getBookingById(id));
     }
 
     @PatchMapping("/{id}/approve")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BookingResponse> approveBooking(
             @PathVariable Long id,
             @Valid @RequestBody BookingReviewRequest request) {
@@ -60,6 +57,7 @@ public class BookingController {
     }
 
     @PatchMapping("/{id}/reject")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BookingResponse> rejectBooking(
             @PathVariable Long id,
             @Valid @RequestBody BookingReviewRequest request) {

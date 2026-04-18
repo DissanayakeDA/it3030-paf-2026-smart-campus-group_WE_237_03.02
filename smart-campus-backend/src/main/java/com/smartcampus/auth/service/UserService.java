@@ -6,18 +6,23 @@ import java.util.Optional;
 import com.smartcampus.auth.dto.CreateUserRequest;
 import com.smartcampus.auth.dto.UpdateUserRequest;
 import com.smartcampus.auth.dto.UserResponse;
+import com.smartcampus.auth.enums.Role;
 
 public interface UserService {
 
-    UserResponse createUser(CreateUserRequest request);
+	UserResponse createUser(CreateUserRequest request);
 
-    List<UserResponse> getAllUsers();
+	List<UserResponse> getAllUsers();
 
-    Optional<UserResponse> getUserById(Long id);
+	Optional<UserResponse> getUserById(Long id);
 
-    UserResponse updateUser(Long id, UpdateUserRequest request);
+	UserResponse getMyProfile();
 
-    UserResponse updateUserRole(Long id, com.smartcampus.auth.enums.Role role);
+	UserResponse updateMyProfile(UpdateUserRequest request);
 
-    void deleteUser(Long id);
+	UserResponse updateUser(Long id, UpdateUserRequest request);
+
+	UserResponse updateUserRole(Long id, Role role);
+
+	void deleteUser(Long id);
 }

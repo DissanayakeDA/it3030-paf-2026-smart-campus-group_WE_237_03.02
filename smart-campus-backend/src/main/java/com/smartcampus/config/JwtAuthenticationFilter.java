@@ -35,7 +35,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     ? uri.substring(ctx.length())
                     : (uri != null ? uri : "");
         }
-        return "/auth/login".equals(path) || "/auth/refresh".equals(path);
+        return "/auth/login".equals(path)
+                || "/auth/refresh".equals(path)
+                || "/auth/google".equals(path);
     }
 
     @Override

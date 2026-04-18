@@ -2,6 +2,7 @@ package com.smartcampus.auth.entity;
 
 import java.time.Instant;
 
+import com.smartcampus.auth.enums.AuthProvider;
 import com.smartcampus.auth.enums.Role;
 
 import jakarta.persistence.Column;
@@ -45,6 +46,18 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    @Builder.Default
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    @Column(unique = true, length = 128)
+    private String oauthSubject;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean localCredentialsEnabled = true;
 
     @Column(nullable = false)
     private Instant createdAt;

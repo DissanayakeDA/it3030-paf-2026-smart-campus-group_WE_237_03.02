@@ -6,9 +6,8 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import { TICKET_CATEGORY_OPTIONS, TICKET_PRIORITY_OPTIONS } from '../constants/ticket.constants';
 import { ticketService } from '../services/ticket.service';
 import type { CreateTicketRequest, TicketCategory, TicketPriority } from '../types/ticket.types';
-import { useAuth } from '../context/AuthContext';
 
-const EMPTY_FORM: Omit<CreateTicketRequest, 'createdByUserId'> = {
+const EMPTY_FORM: CreateTicketRequest = {
   title: '',
   description: '',
   category: '' as TicketCategory,
@@ -23,7 +22,6 @@ const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 export default function CreateTicketPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState(EMPTY_FORM);
@@ -56,10 +54,7 @@ export default function CreateTicketPage() {
 
     try {
       // Step 1 — create ticket
-      const ticket = await ticketService.create({
-        ...form,
-        createdByUserId: user!.id,
-      } as CreateTicketRequest);
+      const ticket = await ticketService.create(form);
 
       // Step 2 — upload attachments sequentially (max 3)
       for (const file of files) {

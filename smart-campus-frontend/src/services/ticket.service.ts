@@ -12,7 +12,6 @@ import type {
   AddResolutionNotesRequest,
   AddTicketCommentRequest,
   UpdateTicketCommentRequest,
-  DeleteTicketCommentRequest,
   TicketStatus,
 } from '../types/ticket.types';
 
@@ -27,6 +26,23 @@ api.interceptors.request.use(config => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+api.interceptors.response.use(
+  response => {
+    window.dispatchEvent(new Event('sc-activity'));
+    return response;
+  },
+  error => {
+    window.dispatchEvent(new Event('sc-activity'));
+    if (error?.response?.status === 401) {
+      localStorage.removeItem('sc_access_token');
+      localStorage.removeItem('sc_refresh_token');
+      localStorage.removeItem('sc_user');
+      window.location.assign('/login');
+    }
+    return Promise.reject(error);
+  }
+);
 
 const BASE = '/api/tickets';
 
@@ -89,8 +105,8 @@ export const ticketService = {
       .then(r => r.data);
   },
 
-  deleteComment(commentId: number, data: DeleteTicketCommentRequest): Promise<void> {
-    return api.delete(`/api/ticket-comments/${commentId}`, { data }).then(() => undefined);
+  deleteComment(commentId: number): Promise<void> {
+    return api.delete(`/api/ticket-comments/${commentId}`).then(() => undefined);
   },
 
   // ── Attachments ─────────────────────────────────────────────────────────────

@@ -12,7 +12,14 @@ import com.smartcampus.auth.enums.Role;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmailIgnoreCase(String email);
+
+    Optional<User> findByOauthSubject(String oauthSubject);
+
     boolean existsByEmailIgnoreCase(String email);
 
+    boolean existsByOauthSubject(String oauthSubject);
+
     boolean existsByRole(Role role);
+
+    long countByRole(Role role);
 }

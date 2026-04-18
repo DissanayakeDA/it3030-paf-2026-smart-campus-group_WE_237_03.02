@@ -11,9 +11,12 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UpdateUserRequest {
+public class ChangePasswordRequest {
 
-    @NotBlank(message = "Name is required")
-    @Size(max = 200, message = "Name must be at most 200 characters")
-    private String name;
+	@NotBlank(message = "Current password is required")
+	private String currentPassword;
+
+	@NotBlank(message = "New password is required")
+	@Size(min = 8, max = 128, message = "New password must be between 8 and 128 characters")
+	private String newPassword;
 }
