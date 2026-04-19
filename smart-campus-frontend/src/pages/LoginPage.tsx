@@ -1,14 +1,22 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import axios from 'axios';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const [searchParams] = useSearchParams();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const oauthError = useMemo(() => {
+    const raw = searchParams.get('oauth2Error');
+    if (!raw) return null;
+    return raw.replaceAll('+', ' ');
+  }, [searchParams]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -51,9 +59,9 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <h2 className="text-lg font-semibold text-[#061A40] mb-6">Sign in to your account</h2>
 
-          {error && (
+          {(error || oauthError) && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
+              <p className="text-sm text-red-600">{error ?? oauthError}</p>
             </div>
           )}
 
@@ -106,6 +114,27 @@ export default function LoginPage() {
                 'Sign in'
               )}
             </button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase tracking-wide">
+                <span className="bg-white px-2 text-gray-500">Or</span>
+              </div>
+            </div>
+
+            <a
+              href="/auth/oauth2/authorization/google"
+              className="w-full border border-gray-300 text-gray-800 font-medium py-2.5 rounded-lg text-sm
+                transition-colors duration-150 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0353A4]
+                focus:ring-offset-2 flex items-center justify-center gap-2"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="w-4 h-4">
+                <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.8-5.5 3.8-3.3 0-6-2.8-6-6.2s2.7-6.2 6-6.2c1.9 0 3.2.8 3.9 1.5l2.6-2.5C16.8 2.8 14.6 2 12 2 6.9 2 2.8 6.4 2.8 12s4.1 10 9.2 10c5.3 0 8.8-3.8 8.8-9.1 0-.6-.1-1.1-.2-1.6H12z" />
+              </svg>
+              Continue with Google
+            </a>
           </form>
         </div>
 
