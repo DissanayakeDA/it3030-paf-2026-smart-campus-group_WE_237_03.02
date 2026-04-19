@@ -227,6 +227,21 @@ export default function TicketDetailsPage() {
     () => [...comments].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
     [comments]
   );
+  const assignedTechnicianLabel = useMemo(() => {
+    if (ticket?.assignedTechnicianId == null) return '—';
+
+    const apiProvidedName = ticket.assignedTechnicianName?.trim();
+    if (apiProvidedName) return apiProvidedName;
+
+    const cachedName = usersById[ticket.assignedTechnicianId]?.name?.trim();
+    if (cachedName) return cachedName;
+
+    if (user && ticket.assignedTechnicianId === user.id && user.name.trim()) {
+      return user.name.trim();
+    }
+
+    return `Tech #${ticket.assignedTechnicianId}`;
+  }, [ticket, usersById, user]);
 
   async function handlePostComment(e: FormEvent) {
     e.preventDefault();
@@ -651,7 +666,7 @@ export default function TicketDetailsPage() {
                 label="Reported By"
                 value={ticket.createdByUserName?.trim() || `User #${ticket.createdByUserId}`}
               />
-              <DetailRow label="Assigned To" value={ticket.assignedTechnicianId ? `Tech #${ticket.assignedTechnicianId}` : '—'} />
+              <DetailRow label="Assigned To" value={assignedTechnicianLabel} />
               <DetailRow label="Created" value={formatDate(ticket.createdAt)} />
               <DetailRow label="First Response" value={formatDate(ticket.firstResponseAt)} />
               <DetailRow label="Updated" value={formatDate(ticket.updatedAt)} />

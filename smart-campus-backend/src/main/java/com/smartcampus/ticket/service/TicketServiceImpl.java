@@ -456,6 +456,10 @@ public class TicketServiceImpl implements TicketService {
 		if (createdByUserName == null && ticket.getCreatedByUserId() != null) {
 			createdByUserName = resolveUserName(ticket.getCreatedByUserId());
 		}
+		String assignedTechnicianName = userNamesById.get(ticket.getAssignedTechnicianId());
+		if (assignedTechnicianName == null && ticket.getAssignedTechnicianId() != null) {
+			assignedTechnicianName = resolveUserName(ticket.getAssignedTechnicianId());
+		}
 
 		return TicketResponse.builder()
 				.id(ticket.getId())
@@ -469,6 +473,7 @@ public class TicketServiceImpl implements TicketService {
 				.createdByUserId(ticket.getCreatedByUserId())
 				.createdByUserName(createdByUserName)
 				.assignedTechnicianId(ticket.getAssignedTechnicianId())
+				.assignedTechnicianName(assignedTechnicianName)
 				.rejectionReason(ticket.getRejectionReason())
 				.resolutionNotes(ticket.getResolutionNotes())
 				.firstResponseAt(ticket.getFirstResponseAt())
@@ -480,14 +485,18 @@ public class TicketServiceImpl implements TicketService {
 	}
 
 	private Map<Long, String> loadUserNamesById(List<Ticket> tickets) {
-		Set<Long> reporterIds = tickets.stream()
+		Set<Long> userIds = tickets.stream()
 				.map(Ticket::getCreatedByUserId)
 				.filter(Objects::nonNull)
 				.collect(Collectors.toSet());
-		if (reporterIds.isEmpty()) {
+		tickets.stream()
+				.map(Ticket::getAssignedTechnicianId)
+				.filter(Objects::nonNull)
+				.forEach(userIds::add);
+		if (userIds.isEmpty()) {
 			return Map.of();
 		}
-		return userRepository.findAllById(reporterIds).stream()
+		return userRepository.findAllById(userIds).stream()
 				.collect(Collectors.toMap(User::getId, User::getName));
 	}
 
