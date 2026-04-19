@@ -6,6 +6,7 @@ import EmptyState from '../components/common/EmptyState';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useResources } from '../hooks/useResources';
 import { resourceService } from '../services/resource.service';
+import { useAuth } from '../context/AuthContext';
 import type { ResourceStatus, ResourceType, ResourceResponse, ResourceListFilters } from '../types/resource.types';
 
 const STATUS_STYLES: Record<ResourceStatus, string> = {
@@ -90,6 +91,9 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
 }
 
 export default function ResourceListPage() {
+  const { user } = useAuth();
+  const canManageResources = user?.role === 'ADMIN';
+
   // Filters data state
   const [filterInputs, setFilterInputs] = useState<ResourceListFilters>({
     type: undefined,
@@ -165,25 +169,27 @@ export default function ResourceListPage() {
             : `${totalCount} resource${totalCount !== 1 ? "s" : ""} found`
         }
         action={
-          <Link
-            to="/resources/create"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#0353A4] to-[#003559] hover:from-[#003559] hover:to-[#002740] text-white text-sm font-semibold rounded-xl shadow-md shadow-[#0353A4]/20 hover:shadow-lg hover:shadow-[#0353A4]/25 transition-all duration-200 active:scale-[0.98]"
-          >
-            <svg
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2.5}
-              stroke="currentColor"
-              className="w-4 h-4"
+          canManageResources ? (
+            <Link
+              to="/resources/create"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#0353A4] to-[#003559] hover:from-[#003559] hover:to-[#002740] text-white text-sm font-semibold rounded-xl shadow-md shadow-[#0353A4]/20 hover:shadow-lg hover:shadow-[#0353A4]/25 transition-all duration-200 active:scale-[0.98]"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add Resource
-          </Link>
+              <svg
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2.5}
+                stroke="currentColor"
+                className="w-4 h-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Add Resource
+            </Link>
+          ) : undefined
         }
       />
 
