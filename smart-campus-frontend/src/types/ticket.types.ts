@@ -34,7 +34,9 @@ export interface TicketResponse {
   resourceId: number | null;
   locationText: string;
   createdByUserId: number;
+  createdByUserName: string | null;
   assignedTechnicianId: number | null;
+  assignedTechnicianName: string | null;
   rejectionReason: string | null;
   resolutionNotes: string | null;
   firstResponseAt: string | null;
@@ -87,6 +89,21 @@ export interface CreateTicketRequest {
   resourceId?: number;
   locationText: string;
   createdByUserId: number;
+}
+
+export interface UpdateTicketRequest {
+  title: string;
+  description: string;
+  category: TicketCategory;
+  priority: TicketPriority;
+  preferredContact: string;
+  resourceId?: number;
+  locationText: string;
+  actingUserId: number;
+}
+
+export interface DeleteTicketRequest {
+  actingUserId: number;
 }
 
 export interface UpdateTicketStatusRequest {

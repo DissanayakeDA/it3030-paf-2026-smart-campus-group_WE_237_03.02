@@ -8,6 +8,11 @@ import CreateTicketPage from './pages/CreateTicketPage';
 import TicketDetailsPage from './pages/TicketDetailsPage';
 import ResourceListPage from './pages/ResourceListPage';
 import CreateResourcePage from './pages/CreateResourcePage';
+import EditResourcePage from './pages/EditResourcePage';
+import ProfilePage from './pages/ProfilePage';
+import UserManagementPage from './pages/UserManagementPage';
+import OAuth2CallbackPage from './pages/OAuth2CallbackPage';
+import type { Role } from './types/auth.types';
 
 // Redirects unauthenticated users to /login
 function ProtectedRoute() {
@@ -21,9 +26,17 @@ function GuestRoute() {
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Outlet />;
 }
 
+function RoleRoute({ allowedRoles }: { allowedRoles: Role[] }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/dashboard" replace />;
+  return allowedRoles.includes(user.role) ? <Outlet /> : <Navigate to="/dashboard" replace />;
+}
+
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/oauth2/callback" element={<OAuth2CallbackPage />} />
+
       {/* Guest-only (redirect to dashboard if already logged in) */}
       <Route element={<GuestRoute />}>
         <Route path="/login" element={<LoginPage />} />
@@ -33,12 +46,19 @@ function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard"        element={<DashboardPage />} />
-          <Route path="tickets"          element={<TicketListPage />} />
-          <Route path="tickets/create"   element={<CreateTicketPage />} />
-          <Route path="tickets/:id"      element={<TicketDetailsPage />} />
-          <Route path="resources"        element={<ResourceListPage />} />
-          <Route path="resources/create" element={<CreateResourcePage />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="tickets" element={<TicketListPage />} />
+          <Route path="tickets/create" element={<CreateTicketPage />} />
+          <Route path="tickets/:id" element={<TicketDetailsPage />} />
+          <Route path="resources" element={<ResourceListPage />} />
+          <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
+            <Route path="resources/create" element={<CreateResourcePage />} />
+          </Route>
+          <Route path="resources/edit/:id" element={<EditResourcePage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
+            <Route path="users" element={<UserManagementPage />} />
+          </Route>
         </Route>
       </Route>
 

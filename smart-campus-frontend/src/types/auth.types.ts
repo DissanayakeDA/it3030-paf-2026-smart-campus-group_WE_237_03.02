@@ -4,7 +4,14 @@ export interface UserDTO {
   id: number;
   name: string;
   email: string;
+  empId?: string | null;
+  phoneNumber?: string | null;
   role: Role;
+}
+
+export interface UserResponse extends UserDTO {
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface LoginRequest {
@@ -20,4 +27,23 @@ export interface AuthResponse {
 
 export interface RefreshTokenRequest {
   refreshToken: string;
+}
+
+export interface CreateUserRequest {
+  name: string;
+  email: string;
+  empId: string;
+  phoneNumber: string;
+  password: string;
+  role: Role;
+}
+
+export interface UpdateProfileRequest {
+  name: string;
+  phoneNumber: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }

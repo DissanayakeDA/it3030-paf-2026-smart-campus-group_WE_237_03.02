@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth.service';
-import type { UserDTO } from '../types/auth.types';
+import type { AuthResponse, UserDTO } from '../types/auth.types';
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 const KEY_ACCESS  = 'sc_access_token';
@@ -21,6 +21,8 @@ interface AuthContextValue {
   accessToken: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithOAuthTokens: (accessToken: string, refreshToken: string) => Promise<void>;
+  setCurrentUser: (nextUser: UserDTO) => void;
   logout: () => void;
 }
 
@@ -50,16 +52,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     else localStorage.removeItem(KEY_USER);
   }, [user]);
 
+  const applyAuthResponse = useCallback((response: AuthResponse) => {
+    localStorage.setItem(KEY_ACCESS, response.accessToken);
+    localStorage.setItem(KEY_REFRESH, response.refreshToken);
+    localStorage.setItem(KEY_USER, JSON.stringify(response.user));
+    setAccessToken(response.accessToken);
+    setUser(response.user);
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     const normalizedEmail = email.trim().toLowerCase();
     const response = await authService.login({ email: normalizedEmail, password });
-    localStorage.setItem(KEY_ACCESS,  response.accessToken);
-    localStorage.setItem(KEY_REFRESH, response.refreshToken);
-    localStorage.setItem(KEY_USER,    JSON.stringify(response.user));
-    setAccessToken(response.accessToken);
-    setUser(response.user);
+    applyAuthResponse(response);
     navigate('/dashboard', { replace: true });
-  }, [navigate]);
+  }, [applyAuthResponse, navigate]);
+
+  const loginWithOAuthTokens = useCallback(async (newAccessToken: string, newRefreshToken: string) => {
+    const userFromToken = await authService.getMe(newAccessToken);
+    applyAuthResponse({
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      user: userFromToken,
+    });
+    navigate('/dashboard', { replace: true });
+  }, [applyAuthResponse, navigate]);
+
+  const setCurrentUser = useCallback((nextUser: UserDTO) => {
+    setUser(nextUser);
+  }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem(KEY_ACCESS);
@@ -72,7 +92,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, accessToken, isAuthenticated: !!accessToken && !!user, login, logout }}
+      value={{
+        user,
+        accessToken,
+        isAuthenticated: !!accessToken && !!user,
+        login,
+        loginWithOAuthTokens,
+        setCurrentUser,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

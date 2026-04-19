@@ -1,5 +1,7 @@
 package com.smartcampus.config;
 
+import com.smartcampus.auth.oauth2.OAuth2LoginFailureHandler;
+import com.smartcampus.auth.oauth2.OAuth2LoginSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -27,6 +29,27 @@ public class SecurityConfig {
 
 	@Bean
 	@Order(1)
+	public SecurityFilterChain oauth2SecurityFilterChain(
+			HttpSecurity http,
+			OAuth2LoginSuccessHandler oauth2LoginSuccessHandler,
+			OAuth2LoginFailureHandler oauth2LoginFailureHandler
+	) throws Exception {
+		http
+				.securityMatcher("/auth/oauth2/**")
+				.cors(cors -> cors.configurationSource(corsConfigurationSource))
+				.csrf(csrf -> csrf.disable())
+				.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+				.oauth2Login(oauth2 -> oauth2
+						.authorizationEndpoint(endpoint -> endpoint.baseUri("/auth/oauth2/authorization"))
+						.redirectionEndpoint(endpoint -> endpoint.baseUri("/auth/oauth2/callback/*"))
+						.successHandler(oauth2LoginSuccessHandler)
+						.failureHandler(oauth2LoginFailureHandler));
+		return http.build();
+	}
+
+	@Bean
+	@Order(2)
 	public SecurityFilterChain authPublicSecurityFilterChain(HttpSecurity http) throws Exception {
 		http
 				.securityMatcher("/auth/login", "/auth/refresh")
@@ -38,19 +61,18 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	@Order(2)
+	@Order(3)
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
 				.cors(cors -> cors.configurationSource(corsConfigurationSource))
 				.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-						.requestMatchers("/auth/login", "/auth/refresh", "/error").permitAll()
+						.requestMatchers("/auth/login", "/auth/refresh", "/auth/oauth2/**", "/error").permitAll()
 						.requestMatchers("/api/tickets", "/api/tickets/**").permitAll()
 						.requestMatchers("/api/ticket-comments", "/api/ticket-comments/**").permitAll()
 						.requestMatchers("/api/resources", "/api/resources/**").permitAll()
 						.requestMatchers("/api/bookings", "/api/bookings/**").permitAll()
-						.requestMatchers("/api/users", "/api/users/**").permitAll()
 						.anyRequest().authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

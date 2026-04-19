@@ -20,6 +20,12 @@ const EMPTY_FORM: Omit<CreateTicketRequest, 'createdByUserId'> = {
 
 const MAX_FILES = 3;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const PHONE_REGEX = /^\d{10}$/;
+const MAX_TOTAL_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+
+function getTotalAttachmentBytes(items: File[]): number {
+  return items.reduce((total, file) => total + file.size, 0);
+}
 
 export default function CreateTicketPage() {
   const navigate = useNavigate();
@@ -30,28 +36,78 @@ export default function CreateTicketPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
+    if (name === 'preferredContact') {
+      const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
+      setForm(prev => ({ ...prev, preferredContact: digitsOnly }));
+      return;
+    }
     setForm(prev => ({ ...prev, [name]: value }));
   }
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files ?? []);
-    const valid = selected.filter(f => ACCEPTED_TYPES.includes(f.type));
-    const combined = [...files, ...valid].slice(0, MAX_FILES);
-    setFiles(combined);
+    const nextFiles = [...files];
+    let currentTotalBytes = getTotalAttachmentBytes(nextFiles);
+    let skippedByType = false;
+    let skippedByCount = false;
+    let skippedByTotalSize = false;
+
+    for (const file of selected) {
+      if (!ACCEPTED_TYPES.includes(file.type)) {
+        skippedByType = true;
+        continue;
+      }
+      if (nextFiles.length >= MAX_FILES) {
+        skippedByCount = true;
+        continue;
+      }
+      if (currentTotalBytes + file.size > MAX_TOTAL_ATTACHMENT_BYTES) {
+        skippedByTotalSize = true;
+        continue;
+      }
+      nextFiles.push(file);
+      currentTotalBytes += file.size;
+    }
+
+    setFiles(nextFiles);
+    if (skippedByTotalSize) {
+      setAttachmentError('Total attachment size cannot exceed 10MB.');
+    } else if (skippedByCount) {
+      setAttachmentError(`You can upload up to ${MAX_FILES} images.`);
+    } else if (skippedByType) {
+      setAttachmentError('Only image files are allowed.');
+    } else {
+      setAttachmentError(null);
+    }
+
     // reset input so the same file can be re-added after removal
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   function removeFile(index: number) {
     setFiles(prev => prev.filter((_, i) => i !== index));
+    setAttachmentError(null);
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setAttachmentError(null);
+
+    if (!PHONE_REGEX.test(form.preferredContact)) {
+      setError('Phone number must contain exactly 10 digits.');
+      return;
+    }
+
+    if (getTotalAttachmentBytes(files) > MAX_TOTAL_ATTACHMENT_BYTES) {
+      setAttachmentError('Total attachment size cannot exceed 10MB.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -76,12 +132,17 @@ export default function CreateTicketPage() {
     }
   }
 
+  const totalAttachmentBytes = getTotalAttachmentBytes(files);
+  const totalAttachmentMB = totalAttachmentBytes / (1024 * 1024);
+  const attachmentSizeValid = totalAttachmentBytes <= MAX_TOTAL_ATTACHMENT_BYTES;
+
   const isValid =
     form.title.trim() &&
     form.description.trim() &&
     form.category &&
     form.priority &&
-    form.preferredContact.trim() &&
+    PHONE_REGEX.test(form.preferredContact) &&
+    attachmentSizeValid &&
     form.locationText.trim();
 
   return (
@@ -189,22 +250,30 @@ export default function CreateTicketPage() {
                 />
               </div>
 
-              {/* Preferred Contact */}
+              {/* Phone Number */}
               <div>
                 <label htmlFor="preferredContact" className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Preferred Contact <span className="text-red-500">*</span>
+                  Phone Number <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="preferredContact"
                   name="preferredContact"
                   type="text"
+                  inputMode="numeric"
+                  pattern="\d{10}"
+                  maxLength={10}
                   required
                   value={form.preferredContact}
                   onChange={handleChange}
-                  placeholder="e.g. email or phone number"
+                  placeholder="e.g. 0712345678"
                   className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400
                     focus:outline-none focus:ring-2 focus:ring-[#0353A4] focus:border-transparent transition"
                 />
+                {form.preferredContact.length > 0 && !PHONE_REGEX.test(form.preferredContact) && (
+                  <p className="mt-1 text-xs text-red-600">
+                    Enter a valid 10-digit phone number.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -235,9 +304,13 @@ export default function CreateTicketPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Attachments
                 <span className="ml-1.5 text-xs text-gray-400 font-normal">
-                  (optional — images only, max {MAX_FILES})
+                  (optional — images only, max {MAX_FILES}, max 10MB total)
                 </span>
               </label>
+
+              <p className="text-xs text-gray-500 mb-2">
+                Total size: {totalAttachmentMB.toFixed(2)}MB / 10.00MB
+              </p>
 
               {/* File previews */}
               {files.length > 0 && (
@@ -286,6 +359,10 @@ export default function CreateTicketPage() {
                     Choose images ({files.length}/{MAX_FILES})
                   </label>
                 </>
+              )}
+
+              {attachmentError && (
+                <p className="mt-2 text-sm text-red-600">{attachmentError}</p>
               )}
             </div>
 

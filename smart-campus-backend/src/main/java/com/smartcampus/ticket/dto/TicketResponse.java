@@ -28,7 +28,9 @@ public class TicketResponse {
 	private Long resourceId;
 	private String locationText;
 	private Long createdByUserId;
+	private String createdByUserName;
 	private Long assignedTechnicianId;
+	private String assignedTechnicianName;
 	private String rejectionReason;
 	private String resolutionNotes;
 	private Instant firstResponseAt;

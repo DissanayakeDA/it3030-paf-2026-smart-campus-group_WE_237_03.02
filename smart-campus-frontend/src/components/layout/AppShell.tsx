@@ -9,11 +9,14 @@ const PAGE_TITLES: Record<string, string> = {
   '/tickets/create': 'Create Ticket',
   '/resources': 'Resources',
   '/resources/create': 'Add Resource',
+  '/users': 'User Management',
+  '/profile': 'My Profile',
 };
 
 function resolveTitle(pathname: string): string {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
   if (pathname.startsWith('/tickets/')) return 'Ticket Details';
+  if (pathname.startsWith('/resources/edit/')) return 'Edit Resource';
   return 'Smart Campus';
 }
 

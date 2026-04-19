@@ -55,6 +55,42 @@ function IconResource() {
   );
 }
 
+function IconUsers() {
+  return (
+    <svg
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.8}
+      stroke="currentColor"
+      className="w-5 h-5"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M18 18.72a9.094 9.094 0 003.742-.479 3 3 0 00-4.682-2.72m.94 3.198v-.001c0-1.113-.285-2.16-.787-3.07m0 0A5.987 5.987 0 0012 12.75a5.987 5.987 0 00-5.213 2.898m10.426 0A5.987 5.987 0 0012 12.75a5.987 5.987 0 00-5.213 2.898m0 0a3 3 0 00-4.681 2.72 9.091 9.091 0 003.74.477m.94-3.197a5.987 5.987 0 00-.787 3.069m10.426-8.448a4.5 4.5 0 11-8.848 0 4.5 4.5 0 018.848 0z"
+      />
+    </svg>
+  );
+}
+
+function IconProfile() {
+  return (
+    <svg
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.8}
+      stroke="currentColor"
+      className="w-5 h-5"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.75 6.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.118a7.5 7.5 0 0115 0A17.933 17.933 0 0112 21.75a17.933 17.933 0 01-7.5-1.632z"
+      />
+    </svg>
+  );
+}
+
 function IconLogout() {
   return (
     <svg
@@ -130,6 +166,18 @@ export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
             to="/resources"
             label="Resources"
             icon={<IconResource />}
+          />
+          {user?.role === "ADMIN" && (
+            <SidebarItem
+              to="/users"
+              label="User Management"
+              icon={<IconUsers />}
+            />
+          )}
+          <SidebarItem
+            to="/profile"
+            label="My Profile"
+            icon={<IconProfile />}
           />
         </nav>
 

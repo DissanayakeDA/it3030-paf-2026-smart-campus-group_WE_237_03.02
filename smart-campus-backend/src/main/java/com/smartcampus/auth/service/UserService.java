@@ -3,7 +3,9 @@ package com.smartcampus.auth.service;
 import java.util.List;
 import java.util.Optional;
 
+import com.smartcampus.auth.dto.ChangePasswordRequest;
 import com.smartcampus.auth.dto.CreateUserRequest;
+import com.smartcampus.auth.dto.UpdateOwnProfileRequest;
 import com.smartcampus.auth.dto.UpdateUserRequest;
 import com.smartcampus.auth.dto.UserResponse;
 
@@ -16,6 +18,12 @@ public interface UserService {
     Optional<UserResponse> getUserById(Long id);
 
     UserResponse updateUser(Long id, UpdateUserRequest request);
+
+    UserResponse getCurrentUserProfile();
+
+    UserResponse updateCurrentUserProfile(UpdateOwnProfileRequest request);
+
+    void changeCurrentUserPassword(ChangePasswordRequest request);
 
     UserResponse updateUserRole(Long id, com.smartcampus.auth.enums.Role role);
 

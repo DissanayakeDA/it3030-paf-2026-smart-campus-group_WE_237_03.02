@@ -6,7 +6,7 @@ import StatusPill from '../components/common/StatusPill';
 import EmptyState from '../components/common/EmptyState';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useTickets } from '../hooks/useTickets';
-import { getCurrentUserId } from '../utils/currentUserId';
+import { useAuth } from '../context/AuthContext';
 import type { TicketStatus } from '../types/ticket.types';
 import {
   TICKET_CATEGORY_LABELS,
@@ -30,29 +30,35 @@ function formatDate(iso: string) {
 }
 
 export default function TicketListPage() {
+  const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState<TicketStatus | 'ALL'>('ALL');
-  const currentUserId = getCurrentUserId();
+  const isAdmin = user?.role === 'ADMIN';
+  const isTechnician = user?.role === 'TECHNICIAN';
+  const currentUserId = user?.id;
 
   const { tickets, loading, error, refetch } = useTickets({
     status: activeFilter === 'ALL' ? undefined : activeFilter,
-    createdByUserId: currentUserId,
+    createdByUserId: isAdmin || isTechnician ? undefined : currentUserId,
+    assignedTechnicianId: isTechnician ? currentUserId : undefined,
   });
 
   return (
     <PageContainer>
       <SectionTitle
-        title="My Tickets"
+        title={isAdmin ? 'All Tickets' : isTechnician ? 'Assigned Tickets' : 'My Tickets'}
         subtitle={loading ? 'Loading…' : `${tickets.length} request${tickets.length !== 1 ? 's' : ''}`}
         action={
-          <Link
-            to="/tickets/create"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#0353A4] hover:bg-[#003559] text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            New Ticket
-          </Link>
+          !isAdmin && !isTechnician ? (
+            <Link
+              to="/tickets/create"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#0353A4] hover:bg-[#003559] text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              New Ticket
+            </Link>
+          ) : undefined
         }
       />
 
@@ -100,11 +106,13 @@ export default function TicketListPage() {
             title="No tickets found"
             description={
               activeFilter === 'ALL'
-                ? 'No facility requests yet. Create one to get started.'
+                ? (isAdmin || isTechnician
+                    ? 'No tickets are currently available.'
+                    : 'No facility requests yet. Create one to get started.')
                 : `No tickets with status "${activeFilter.replace('_', ' ')}".`
             }
             action={
-              activeFilter === 'ALL' ? (
+              activeFilter === 'ALL' && !isAdmin && !isTechnician ? (
                 <Link
                   to="/tickets/create"
                   className="px-4 py-2 bg-[#0353A4] text-white text-sm font-medium rounded-lg hover:bg-[#003559] transition-colors"
