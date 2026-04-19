@@ -39,6 +39,12 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(length = 50, unique = true)
+    private String empId;
+
+    @Column(length = 20)
+    private String phoneNumber;
+
     @Column(nullable = false)
     private String password;
 

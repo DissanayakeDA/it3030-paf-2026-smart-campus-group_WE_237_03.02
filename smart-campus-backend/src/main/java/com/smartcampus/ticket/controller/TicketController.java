@@ -42,9 +42,11 @@ public class TicketController {
 	public ResponseEntity<List<TicketResponse>> getAllTickets(
 			@RequestParam(required = false) TicketStatus status,
 			@RequestParam(required = false) Long createdByUserId,
+			@RequestParam(required = false) Long assignedTechnicianId,
 			@RequestParam(required = false) Long actingUserId,
 			@RequestParam(required = false) ActorRole actorRole) {
-		return ResponseEntity.ok(ticketService.getAllTickets(status, createdByUserId, actingUserId, actorRole));
+		return ResponseEntity
+				.ok(ticketService.getAllTickets(status, createdByUserId, assignedTechnicianId, actingUserId, actorRole));
 	}
 
 	@PostMapping

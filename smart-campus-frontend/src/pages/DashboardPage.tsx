@@ -7,6 +7,7 @@ import QuickActionCard from '../components/dashboard/QuickActionCard';
 import RecentTicketsTable from '../components/dashboard/RecentTicketsTable';
 import { useAuth } from '../context/AuthContext';
 import { useTickets } from '../hooks/useTickets';
+import { useResources } from '../hooks/useResources';
 import { ticketService } from '../services/ticket.service';
 import type { TicketSummaryResponse } from '../types/ticket.types';
 
@@ -45,6 +46,12 @@ const IconTotal = (
 const IconResolution = (
   <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="#ea580c" className="w-5 h-5">
     <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75z" />
+  </svg>
+);
+
+const IconAssigned = (
+  <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="#0f766e" className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.5h16.5v15H3.75zM8.25 9h7.5M8.25 12h7.5M8.25 15h4.5" />
   </svg>
 );
 
@@ -161,7 +168,7 @@ function UserDashboard({ userId, userName, role }: { userId: number; userName: s
   );
 }
 
-// ── Admin / Technician dashboard ──────────────────────────────────────────────
+// ── Admin dashboard ────────────────────────────────────────────────────────────
 
 function AdminDashboard({ userName, role }: { userName: string; role: string }) {
   const { tickets, loading: ticketsLoading, error: ticketsError } = useTickets();
@@ -266,6 +273,131 @@ function AdminDashboard({ userName, role }: { userName: string; role: string }) 
   );
 }
 
+// ── Technician dashboard ──────────────────────────────────────────────────────
+
+function TechnicianDashboard({ userId, userName, role }: { userId: number; userName: string; role: string }) {
+  const { tickets, loading: ticketsLoading, error: ticketsError } = useTickets({
+    assignedTechnicianId: userId,
+  });
+  const { resources, loading: resourcesLoading, error: resourcesError } = useResources();
+
+  const stats = useMemo(() => {
+    const open = tickets.filter((t) => t.status === 'OPEN').length;
+    const inProgress = tickets.filter((t) => t.status === 'IN_PROGRESS').length;
+    const resolved = tickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+    const assignedResourceIds = new Set(tickets.map((ticket) => ticket.resourceId).filter((id): id is number => id != null));
+    return {
+      open,
+      inProgress,
+      resolved,
+      total: tickets.length,
+      resourceCount: assignedResourceIds.size,
+    };
+  }, [tickets]);
+
+  const recentAssigned = useMemo(
+    () =>
+      [...tickets]
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, 5),
+    [tickets]
+  );
+
+  const assignedResources = useMemo(() => {
+    const assignedIds = new Set(
+      tickets
+        .map((ticket) => ticket.resourceId)
+        .filter((resourceId): resourceId is number => resourceId != null)
+    );
+    return resources.filter((resource) => assignedIds.has(resource.id));
+  }, [resources, tickets]);
+
+  return (
+    <>
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-1">
+          <h1 className="text-2xl font-bold text-[#061A40]">
+            Welcome back, {userName.split(' ')[0]}
+          </h1>
+          <RoleBadge role={role} />
+        </div>
+        <p className="text-sm text-gray-500">Your assigned maintenance work and related resources.</p>
+      </div>
+
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+        <StatCard label="Assigned Open" value={stats.open} delta="Needs action" color="bg-blue-50" icon={IconOpen} />
+        <StatCard label="In Progress" value={stats.inProgress} delta="Currently working" color="bg-yellow-50" icon={IconProgress} />
+        <StatCard label="Resolved" value={stats.resolved} delta="Completed" color="bg-green-50" icon={IconResolved} />
+        <StatCard label="Assigned Resources" value={stats.resourceCount} delta={`${stats.total} tickets`} color="bg-teal-50" icon={IconAssigned} />
+      </div>
+
+      <div className="mb-8">
+        <SectionTitle title="Quick Actions" subtitle="Jump directly into your assigned work" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <QuickActionCard title="Assigned Tickets" description="Review tickets assigned to you" to="/tickets" icon={IconTicket} />
+          <QuickActionCard title="Assigned Resources" description="View resources linked to your tickets" to="/resources" icon={IconResource} />
+          <QuickActionCard title="All Resources" description="Browse full resource catalogue" to="/resources" icon={IconBooking} />
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <SectionTitle
+            title="My Assigned Tickets"
+            subtitle="Recently updated assignments"
+            action={
+              <a href="/tickets" className="text-sm text-[#0353A4] hover:underline font-medium">
+                View all
+              </a>
+            }
+          />
+        </div>
+        {ticketsLoading ? (
+          <LoadingSpinner message="Loading assigned tickets…" />
+        ) : ticketsError ? (
+          <div className="px-6 py-10 text-center text-sm text-red-600">{ticketsError}</div>
+        ) : (
+          <RecentTicketsTable tickets={recentAssigned} emptyMessage="No tickets have been assigned to you yet." />
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <SectionTitle
+            title="Assigned Resources"
+            subtitle="Resources connected to your tickets"
+          />
+        </div>
+        {resourcesLoading ? (
+          <LoadingSpinner message="Loading assigned resources…" />
+        ) : resourcesError ? (
+          <div className="px-6 py-8 text-center text-sm text-red-600">{resourcesError}</div>
+        ) : assignedResources.length === 0 ? (
+          <div className="px-6 py-8 text-center text-sm text-gray-500">
+            No resources linked to your assigned tickets yet.
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {assignedResources.map((resource) => (
+              <div key={resource.id} className="px-6 py-4 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[#061A40] truncate">{resource.name}</p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {resource.type} • {resource.location}
+                  </p>
+                </div>
+                <span className="px-2 py-1 rounded text-xs font-medium bg-[#B9D6F2] text-[#003559]">
+                  #{resource.id}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -279,12 +411,15 @@ export default function DashboardPage() {
     );
   }
 
-  const isPrivileged = user.role === 'ADMIN' || user.role === 'TECHNICIAN';
+  const isAdmin = user.role === 'ADMIN';
+  const isTechnician = user.role === 'TECHNICIAN';
 
   return (
     <PageContainer>
-      {isPrivileged ? (
+      {isAdmin ? (
         <AdminDashboard userName={user.name} role={user.role} />
+      ) : isTechnician ? (
+        <TechnicianDashboard userId={user.id} userName={user.name} role={user.role} />
       ) : (
         <UserDashboard userId={user.id} userName={user.name} role={user.role} />
       )}

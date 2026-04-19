@@ -9,6 +9,9 @@ import TicketDetailsPage from './pages/TicketDetailsPage';
 import ResourceListPage from './pages/ResourceListPage';
 import CreateResourcePage from './pages/CreateResourcePage';
 import EditResourcePage from './pages/EditResourcePage';
+import ProfilePage from './pages/ProfilePage';
+import UserManagementPage from './pages/UserManagementPage';
+import type { Role } from './types/auth.types';
 
 // Redirects unauthenticated users to /login
 function ProtectedRoute() {
@@ -20,6 +23,12 @@ function ProtectedRoute() {
 function GuestRoute() {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Outlet />;
+}
+
+function RoleRoute({ allowedRoles }: { allowedRoles: Role[] }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/dashboard" replace />;
+  return allowedRoles.includes(user.role) ? <Outlet /> : <Navigate to="/dashboard" replace />;
 }
 
 function AppRoutes() {
@@ -41,6 +50,10 @@ function AppRoutes() {
           <Route path="resources" element={<ResourceListPage />} />
           <Route path="resources/create" element={<CreateResourcePage />} />
           <Route path="resources/edit/:id" element={<EditResourcePage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
+            <Route path="users" element={<UserManagementPage />} />
+          </Route>
         </Route>
       </Route>
 

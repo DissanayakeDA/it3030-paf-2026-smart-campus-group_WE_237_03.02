@@ -29,7 +29,7 @@ export default function AppHeader({ title, onMenuToggle }: AppHeaderProps) {
   const isPrivileged = user?.role === 'ADMIN' || user?.role === 'TECHNICIAN';
 
   useEffect(() => {
-    if (!isPrivileged) {
+    if (!isPrivileged || !user) {
       setPendingTickets([]);
       setNewArrivals([]);
       knownTicketIdsRef.current = new Set();
@@ -41,7 +41,12 @@ export default function AppHeader({ title, onMenuToggle }: AppHeaderProps) {
 
     const fetchOpenUnresponded = async () => {
       try {
-        const openTickets = await ticketService.getAll({ status: 'OPEN' });
+        const openTickets = await ticketService.getAll({
+          status: 'OPEN',
+          assignedTechnicianId: user.role === 'TECHNICIAN' ? user.id : undefined,
+          actingUserId: user.id,
+          actorRole: user.role === 'TECHNICIAN' ? 'TECHNICIAN' : 'ADMIN',
+        });
         const unresponded = openTickets
           .filter((ticket) => ticket.firstResponseAt == null)
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -79,7 +84,7 @@ export default function AppHeader({ title, onMenuToggle }: AppHeaderProps) {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [isPrivileged]);
+  }, [isPrivileged, user]);
 
   const latestPending = useMemo(
     () => pendingTickets.slice(0, 5),

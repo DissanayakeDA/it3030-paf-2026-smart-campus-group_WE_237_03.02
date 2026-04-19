@@ -24,7 +24,8 @@ import com.smartcampus.ticket.enums.TicketStatus;
 
 public interface TicketService {
 
-	List<TicketResponse> getAllTickets(TicketStatus status, Long createdByUserId, Long actingUserId, ActorRole actorRole);
+	List<TicketResponse> getAllTickets(TicketStatus status, Long createdByUserId, Long assignedTechnicianId,
+			Long actingUserId, ActorRole actorRole);
 
 	TicketResponse createTicket(CreateTicketRequest request);
 

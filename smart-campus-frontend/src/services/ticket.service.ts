@@ -38,6 +38,7 @@ const BASE = '/api/tickets';
 export type TicketListFilters = {
   status?: TicketStatus;
   createdByUserId?: number;
+  assignedTechnicianId?: number;
   actingUserId?: number;
   actorRole?: ActorRole;
 };
@@ -47,6 +48,7 @@ export const ticketService = {
     const params: Record<string, string | number> = {};
     if (filters?.status) params.status = filters.status;
     if (filters?.createdByUserId != null) params.createdByUserId = filters.createdByUserId;
+    if (filters?.assignedTechnicianId != null) params.assignedTechnicianId = filters.assignedTechnicianId;
     if (filters?.actingUserId != null) params.actingUserId = filters.actingUserId;
     if (filters?.actorRole) params.actorRole = filters.actorRole;
     return api.get<TicketResponse[]>(BASE, { params }).then(r => r.data);

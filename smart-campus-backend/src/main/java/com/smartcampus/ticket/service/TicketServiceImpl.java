@@ -57,23 +57,53 @@ public class TicketServiceImpl implements TicketService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public List<TicketResponse> getAllTickets(TicketStatus status, Long createdByUserId, Long actingUserId,
-			ActorRole actorRole) {
+	public List<TicketResponse> getAllTickets(TicketStatus status, Long createdByUserId, Long assignedTechnicianId,
+			Long actingUserId, ActorRole actorRole) {
 		List<Ticket> tickets;
 
-		if (actorRole == ActorRole.ADMIN || actorRole == ActorRole.TECHNICIAN) {
-			if (createdByUserId != null && status != null) {
-				tickets = ticketRepository.findByStatusAndCreatedByUserIdOrderByCreatedAtDesc(status, createdByUserId);
-			} else if (createdByUserId != null) {
-				tickets = ticketRepository.findByCreatedByUserIdOrderByCreatedAtDesc(createdByUserId);
-			} else if (status != null) {
+		if (actorRole == ActorRole.ADMIN) {
+			if (status != null) {
 				tickets = ticketRepository.findByStatusOrderByCreatedAtDesc(status);
 			} else {
 				tickets = ticketRepository.findAllByOrderByCreatedAtDesc();
 			}
+
+			if (createdByUserId != null) {
+				tickets = tickets.stream()
+						.filter(ticket -> createdByUserId.equals(ticket.getCreatedByUserId()))
+						.toList();
+			}
+			if (assignedTechnicianId != null) {
+				tickets = tickets.stream()
+						.filter(ticket -> assignedTechnicianId.equals(ticket.getAssignedTechnicianId()))
+						.toList();
+			}
+		} else if (actorRole == ActorRole.TECHNICIAN) {
+			if (actingUserId == null) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+						"actingUserId is required for technician access");
+			}
+			if (assignedTechnicianId != null && !assignedTechnicianId.equals(actingUserId)) {
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+			}
+
+			if (status != null) {
+				tickets = ticketRepository.findByStatusAndAssignedTechnicianIdOrderByCreatedAtDesc(status, actingUserId);
+			} else {
+				tickets = ticketRepository.findByAssignedTechnicianIdOrderByCreatedAtDesc(actingUserId);
+			}
+
+			if (createdByUserId != null) {
+				tickets = tickets.stream()
+						.filter(ticket -> createdByUserId.equals(ticket.getCreatedByUserId()))
+						.toList();
+			}
 		} else {
 			if (actingUserId == null) {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "actingUserId is required for student access");
+			}
+			if (assignedTechnicianId != null) {
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 			}
 			if (createdByUserId != null && !createdByUserId.equals(actingUserId)) {
 				throw new ResponseStatusException(HttpStatus.FORBIDDEN);
