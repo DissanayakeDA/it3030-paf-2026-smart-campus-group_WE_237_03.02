@@ -13,6 +13,7 @@ import ProfilePage from './pages/ProfilePage';
 import UserManagementPage from './pages/UserManagementPage';
 import OAuth2CallbackPage from './pages/OAuth2CallbackPage';
 import type { Role } from './types/auth.types';
+import CreateBookingPage from './pages/CreateBookingPage';
 
 // Redirects unauthenticated users to /login
 function ProtectedRoute() {
@@ -59,6 +60,7 @@ function AppRoutes() {
           <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
             <Route path="users" element={<UserManagementPage />} />
           </Route>
+          <Route path="bookings/new" element={<CreateBookingPage />} />
         </Route>
       </Route>
 
