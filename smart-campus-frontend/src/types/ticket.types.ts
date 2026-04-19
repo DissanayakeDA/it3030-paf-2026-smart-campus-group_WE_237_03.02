@@ -36,6 +36,7 @@ export interface TicketResponse {
   createdByUserId: number;
   createdByUserName: string | null;
   assignedTechnicianId: number | null;
+  assignedTechnicianName: string | null;
   rejectionReason: string | null;
   resolutionNotes: string | null;
   firstResponseAt: string | null;
