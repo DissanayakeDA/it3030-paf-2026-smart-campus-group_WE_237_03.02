@@ -202,6 +202,18 @@ export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
             label="Request Booking"
             icon={<IconBooking />}
           />
+          <SidebarItem
+            to="/bookings"
+            label="My Bookings"
+            icon={<IconBooking />}
+          />
+          {user?.role === "ADMIN" && (
+            <SidebarItem
+              to="/admin/bookings"
+              label="All Bookings"
+              icon={<IconBooking />}
+            />
+          )}
         </nav>
 
         {/* User footer */}

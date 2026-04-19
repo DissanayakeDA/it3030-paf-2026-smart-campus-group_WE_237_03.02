@@ -452,13 +452,19 @@ public class TicketServiceImpl implements TicketService {
 	}
 
 	private TicketResponse toResponse(Ticket ticket, Map<Long, String> userNamesById) {
-		String createdByUserName = userNamesById.get(ticket.getCreatedByUserId());
-		if (createdByUserName == null && ticket.getCreatedByUserId() != null) {
-			createdByUserName = resolveUserName(ticket.getCreatedByUserId());
+		String createdByUserName = null;
+		if (ticket.getCreatedByUserId() != null) {
+			createdByUserName = userNamesById.get(ticket.getCreatedByUserId());
+			if (createdByUserName == null) {
+				createdByUserName = resolveUserName(ticket.getCreatedByUserId());
+			}
 		}
-		String assignedTechnicianName = userNamesById.get(ticket.getAssignedTechnicianId());
-		if (assignedTechnicianName == null && ticket.getAssignedTechnicianId() != null) {
-			assignedTechnicianName = resolveUserName(ticket.getAssignedTechnicianId());
+		String assignedTechnicianName = null;
+		if (ticket.getAssignedTechnicianId() != null) {
+			assignedTechnicianName = userNamesById.get(ticket.getAssignedTechnicianId());
+			if (assignedTechnicianName == null) {
+				assignedTechnicianName = resolveUserName(ticket.getAssignedTechnicianId());
+			}
 		}
 
 		return TicketResponse.builder()
@@ -507,10 +513,14 @@ public class TicketServiceImpl implements TicketService {
 	}
 
 	private TicketCommentResponse toCommentResponse(TicketComment comment) {
+		String authorUserName = comment.getAuthorUserId() != null
+				? resolveUserName(comment.getAuthorUserId())
+				: null;
 		return TicketCommentResponse.builder()
 				.id(comment.getId())
 				.ticketId(comment.getTicket().getId())
 				.authorUserId(comment.getAuthorUserId())
+				.authorUserName(authorUserName)
 				.content(comment.getContent())
 				.createdAt(comment.getCreatedAt())
 				.updatedAt(comment.getUpdatedAt())

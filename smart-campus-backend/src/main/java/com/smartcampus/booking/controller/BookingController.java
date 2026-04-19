@@ -3,6 +3,7 @@ package com.smartcampus.booking.controller;
 import com.smartcampus.booking.dto.BookingCreateRequest;
 import com.smartcampus.booking.dto.BookingResponse;
 import com.smartcampus.booking.dto.BookingReviewRequest;
+import com.smartcampus.booking.dto.BookingUpdateRequest;
 import com.smartcampus.booking.enums.BookingStatus;
 import com.smartcampus.booking.service.BookingService;
 import com.smartcampus.auth.enums.Role;
@@ -52,6 +53,13 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getBookingById(id, actingUserId, actorRole));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<BookingResponse> updateBooking(
+            @PathVariable Long id,
+            @Valid @RequestBody BookingUpdateRequest request) {
+        return ResponseEntity.ok(bookingService.updateBooking(id, request));
+    }
+
     @PatchMapping("/{id}/approve")
     public ResponseEntity<BookingResponse> approveBooking(
             @PathVariable Long id,
@@ -71,5 +79,13 @@ public class BookingController {
             @PathVariable Long id,
             @Valid @RequestBody BookingReviewRequest request) {
         return ResponseEntity.ok(bookingService.cancelBooking(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteBooking(
+            @PathVariable Long id,
+            @RequestParam Long actingUserId) {
+        bookingService.deleteBooking(id, actingUserId);
+        return ResponseEntity.noContent().build();
     }
 }
