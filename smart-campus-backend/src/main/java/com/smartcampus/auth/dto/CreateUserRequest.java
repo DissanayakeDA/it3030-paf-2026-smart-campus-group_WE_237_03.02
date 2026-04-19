@@ -5,6 +5,7 @@ import com.smartcampus.auth.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +22,14 @@ public class CreateUserRequest {
 
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
+    @Pattern(regexp = "^[A-Za-z0-9._%+-]+@gmail\\.com$", flags = Pattern.Flag.CASE_INSENSITIVE, message = "Email must be a @gmail.com address")
     private String email;
+
+    @NotBlank(message = "Employee ID is required")
+    private String empId;
+
+    @NotBlank(message = "Phone number is required")
+    private String phoneNumber;
 
     @NotBlank(message = "Password is required")
     private String password;

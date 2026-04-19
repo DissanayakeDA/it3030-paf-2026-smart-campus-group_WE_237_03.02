@@ -17,7 +17,7 @@ export function useTickets(filters: TicketListFilters = {}): UseTicketsResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { status, createdByUserId, actingUserId, actorRole } = filters;
+  const { status, createdByUserId, assignedTechnicianId, actingUserId, actorRole } = filters;
 
   const resolvedActingUserId = actingUserId ?? user?.id;
   const resolvedActorRole: ActorRole | undefined = actorRole ?? (
@@ -31,6 +31,7 @@ export function useTickets(filters: TicketListFilters = {}): UseTicketsResult {
       .getAll({
         status,
         createdByUserId,
+        assignedTechnicianId,
         actingUserId: resolvedActingUserId,
         actorRole: resolvedActorRole,
       })
@@ -40,7 +41,7 @@ export function useTickets(filters: TicketListFilters = {}): UseTicketsResult {
         setError(msg);
       })
       .finally(() => setLoading(false));
-  }, [status, createdByUserId, resolvedActingUserId, resolvedActorRole]);
+  }, [status, createdByUserId, assignedTechnicianId, resolvedActingUserId, resolvedActorRole]);
 
   useEffect(() => {
     fetch();

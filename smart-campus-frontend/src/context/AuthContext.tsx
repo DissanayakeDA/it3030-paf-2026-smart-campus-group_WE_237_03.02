@@ -21,6 +21,7 @@ interface AuthContextValue {
   accessToken: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  setCurrentUser: (nextUser: UserDTO) => void;
   logout: () => void;
 }
 
@@ -61,6 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     navigate('/dashboard', { replace: true });
   }, [navigate]);
 
+  const setCurrentUser = useCallback((nextUser: UserDTO) => {
+    setUser(nextUser);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem(KEY_ACCESS);
     localStorage.removeItem(KEY_REFRESH);
@@ -72,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, accessToken, isAuthenticated: !!accessToken && !!user, login, logout }}
+      value={{ user, accessToken, isAuthenticated: !!accessToken && !!user, login, setCurrentUser, logout }}
     >
       {children}
     </AuthContext.Provider>

@@ -32,21 +32,23 @@ function formatDate(iso: string) {
 export default function TicketListPage() {
   const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState<TicketStatus | 'ALL'>('ALL');
-  const isPrivileged = user?.role === 'ADMIN' || user?.role === 'TECHNICIAN';
+  const isAdmin = user?.role === 'ADMIN';
+  const isTechnician = user?.role === 'TECHNICIAN';
   const currentUserId = user?.id;
 
   const { tickets, loading, error, refetch } = useTickets({
     status: activeFilter === 'ALL' ? undefined : activeFilter,
-    createdByUserId: isPrivileged ? undefined : currentUserId,
+    createdByUserId: isAdmin || isTechnician ? undefined : currentUserId,
+    assignedTechnicianId: isTechnician ? currentUserId : undefined,
   });
 
   return (
     <PageContainer>
       <SectionTitle
-        title={isPrivileged ? 'All Tickets' : 'My Tickets'}
+        title={isAdmin ? 'All Tickets' : isTechnician ? 'Assigned Tickets' : 'My Tickets'}
         subtitle={loading ? 'Loading…' : `${tickets.length} request${tickets.length !== 1 ? 's' : ''}`}
         action={
-          !isPrivileged ? (
+          !isAdmin && !isTechnician ? (
             <Link
               to="/tickets/create"
               className="inline-flex items-center gap-2 px-4 py-2 bg-[#0353A4] hover:bg-[#003559] text-white text-sm font-medium rounded-lg transition-colors"
@@ -104,13 +106,13 @@ export default function TicketListPage() {
             title="No tickets found"
             description={
               activeFilter === 'ALL'
-                ? (isPrivileged
+                ? (isAdmin || isTechnician
                     ? 'No tickets are currently available.'
                     : 'No facility requests yet. Create one to get started.')
                 : `No tickets with status "${activeFilter.replace('_', ' ')}".`
             }
             action={
-              activeFilter === 'ALL' && !isPrivileged ? (
+              activeFilter === 'ALL' && !isAdmin && !isTechnician ? (
                 <Link
                   to="/tickets/create"
                   className="px-4 py-2 bg-[#0353A4] text-white text-sm font-medium rounded-lg hover:bg-[#003559] transition-colors"

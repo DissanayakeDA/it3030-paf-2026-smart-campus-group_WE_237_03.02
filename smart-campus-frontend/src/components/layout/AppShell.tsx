@@ -9,6 +9,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/tickets/create': 'Create Ticket',
   '/resources': 'Resources',
   '/resources/create': 'Add Resource',
+  '/users': 'User Management',
+  '/profile': 'My Profile',
 };
 
 function resolveTitle(pathname: string): string {

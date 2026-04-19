@@ -114,7 +114,9 @@ export default function TicketDetailsPage() {
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [busyAction, setBusyAction] = useState<string | null>(null);
 
-  const isPrivileged = user?.role === 'ADMIN' || user?.role === 'TECHNICIAN';
+  const isAdmin = user?.role === 'ADMIN';
+  const isTechnician = user?.role === 'TECHNICIAN';
+  const isPrivileged = isAdmin || isTechnician;
   const actorRole = user ? toActorRole(user.role) : null;
   const isOwner = !!(user && ticket && ticket.createdByUserId === user.id);
   const canUserEdit = !!(
@@ -187,6 +189,12 @@ export default function TicketDetailsPage() {
   }, [id, user]);
 
   useEffect(() => {
+    if (!isAdmin) {
+      setUsersById({});
+      setTechnicians([]);
+      return;
+    }
+
     userService
       .getAll()
       .then((users) => {
@@ -195,17 +203,13 @@ export default function TicketDetailsPage() {
           return acc;
         }, {});
         setUsersById(userMap);
-        if (isPrivileged) {
-          setTechnicians(users.filter((u) => u.role === 'TECHNICIAN'));
-        } else {
-          setTechnicians([]);
-        }
+        setTechnicians(users.filter((u) => u.role === 'TECHNICIAN'));
       })
       .catch(() => {
         setUsersById({});
         setTechnicians([]);
       });
-  }, [isPrivileged]);
+  }, [isAdmin]);
 
   function getCommentAuthorLabel(authorUserId: number): string {
     const author = usersById[authorUserId];
@@ -654,33 +658,37 @@ export default function TicketDetailsPage() {
 
           {isPrivileged && (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-5">
-              <h4 className="text-sm font-semibold text-gray-700">Admin Actions</h4>
+              <h4 className="text-sm font-semibold text-gray-700">
+                {isAdmin ? 'Admin Actions' : 'Technician Actions'}
+              </h4>
 
-              <form onSubmit={handleAssignTechnician} className="space-y-2">
-                <label htmlFor="assign-tech" className="block text-xs font-medium text-gray-600">
-                  Assign Technician
-                </label>
-                <select
-                  id="assign-tech"
-                  value={technicianId}
-                  onChange={(e) => setTechnicianId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0353A4] focus:border-transparent"
-                >
-                  <option value="">Select technician</option>
-                  {technicians.map((tech) => (
-                    <option key={tech.id} value={tech.id}>
-                      {tech.name} ({tech.email})
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="submit"
-                  disabled={busyAction === 'assign' || !technicianId}
-                  className="w-full px-4 py-2 rounded-lg bg-[#0353A4] text-white text-sm font-medium hover:bg-[#003559] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {busyAction === 'assign' ? 'Assigning…' : 'Assign Technician'}
-                </button>
-              </form>
+              {isAdmin && (
+                <form onSubmit={handleAssignTechnician} className="space-y-2">
+                  <label htmlFor="assign-tech" className="block text-xs font-medium text-gray-600">
+                    Assign Technician
+                  </label>
+                  <select
+                    id="assign-tech"
+                    value={technicianId}
+                    onChange={(e) => setTechnicianId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0353A4] focus:border-transparent"
+                  >
+                    <option value="">Select technician</option>
+                    {technicians.map((tech) => (
+                      <option key={tech.id} value={tech.id}>
+                        {tech.name} ({tech.email})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="submit"
+                    disabled={busyAction === 'assign' || !technicianId}
+                    className="w-full px-4 py-2 rounded-lg bg-[#0353A4] text-white text-sm font-medium hover:bg-[#003559] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {busyAction === 'assign' ? 'Assigning…' : 'Assign Technician'}
+                  </button>
+                </form>
+              )}
 
               <form onSubmit={handleStatusUpdate} className="space-y-2">
                 <label htmlFor="ticket-status" className="block text-xs font-medium text-gray-600">

@@ -18,6 +18,8 @@ public class UserResponse {
     private Long id;
     private String name;
     private String email;
+    private String empId;
+    private String phoneNumber;
     private Role role;
     private Instant createdAt;
     private Instant updatedAt;

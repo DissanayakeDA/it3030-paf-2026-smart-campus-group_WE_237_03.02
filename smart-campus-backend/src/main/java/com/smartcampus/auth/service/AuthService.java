@@ -116,6 +116,8 @@ public class AuthService {
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
+                .empId(user.getEmpId())
+                .phoneNumber(user.getPhoneNumber())
                 .role(user.getRole())
                 .build();
     }
