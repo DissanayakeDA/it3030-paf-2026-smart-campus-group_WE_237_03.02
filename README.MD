@@ -103,6 +103,23 @@ Backend will run on:
 http://localhost:8080
 ```
 
+#### OAuth2 (Google) environment variables
+
+Set these before starting the backend:
+
+```bash
+export GOOGLE_CLIENT_ID=your-google-client-id
+export GOOGLE_CLIENT_SECRET=your-google-client-secret
+export APP_OAUTH2_REDIRECT_SUCCESS_URI=http://localhost:5173/oauth2/callback
+export APP_OAUTH2_REDIRECT_FAILURE_URI=http://localhost:5173/login
+```
+
+In your Google Cloud OAuth app (Web application), add this authorized redirect URI:
+
+```text
+http://localhost:8080/auth/oauth2/callback/google
+```
+
 ---
 
 ### 🔹 4. Database Setup

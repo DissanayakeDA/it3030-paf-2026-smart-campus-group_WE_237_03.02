@@ -11,6 +11,7 @@ import CreateResourcePage from './pages/CreateResourcePage';
 import EditResourcePage from './pages/EditResourcePage';
 import ProfilePage from './pages/ProfilePage';
 import UserManagementPage from './pages/UserManagementPage';
+import OAuth2CallbackPage from './pages/OAuth2CallbackPage';
 import type { Role } from './types/auth.types';
 
 // Redirects unauthenticated users to /login
@@ -34,6 +35,8 @@ function RoleRoute({ allowedRoles }: { allowedRoles: Role[] }) {
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/oauth2/callback" element={<OAuth2CallbackPage />} />
+
       {/* Guest-only (redirect to dashboard if already logged in) */}
       <Route element={<GuestRoute />}>
         <Route path="/login" element={<LoginPage />} />
