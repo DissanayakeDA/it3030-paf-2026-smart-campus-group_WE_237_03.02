@@ -34,6 +34,7 @@ export interface TicketResponse {
   resourceId: number | null;
   locationText: string;
   createdByUserId: number;
+  createdByUserName: string | null;
   assignedTechnicianId: number | null;
   rejectionReason: string | null;
   resolutionNotes: string | null;

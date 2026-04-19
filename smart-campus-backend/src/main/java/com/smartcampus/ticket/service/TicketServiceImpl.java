@@ -6,9 +6,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.smartcampus.auth.entity.User;
+import com.smartcampus.auth.repository.UserRepository;
 import com.smartcampus.ticket.dto.AddResolutionNotesRequest;
 import com.smartcampus.ticket.dto.AddTicketCommentRequest;
 import com.smartcampus.ticket.dto.AssignTechnicianRequest;
@@ -52,6 +56,8 @@ public class TicketServiceImpl implements TicketService {
 	private final TicketCommentRepository ticketCommentRepository;
 
 	private final TicketAttachmentRepository ticketAttachmentRepository;
+
+	private final UserRepository userRepository;
 
 	private final Cloudinary cloudinary;
 
@@ -114,7 +120,10 @@ public class TicketServiceImpl implements TicketService {
 				tickets = ticketRepository.findByCreatedByUserIdOrderByCreatedAtDesc(actingUserId);
 			}
 		}
-		return tickets.stream().map(this::toResponse).toList();
+		Map<Long, String> userNamesById = loadUserNamesById(tickets);
+		return tickets.stream()
+				.map(ticket -> toResponse(ticket, userNamesById))
+				.toList();
 	}
 
 	@Override
@@ -439,6 +448,15 @@ public class TicketServiceImpl implements TicketService {
 	}
 
 	private TicketResponse toResponse(Ticket ticket) {
+		return toResponse(ticket, Map.of());
+	}
+
+	private TicketResponse toResponse(Ticket ticket, Map<Long, String> userNamesById) {
+		String createdByUserName = userNamesById.get(ticket.getCreatedByUserId());
+		if (createdByUserName == null && ticket.getCreatedByUserId() != null) {
+			createdByUserName = resolveUserName(ticket.getCreatedByUserId());
+		}
+
 		return TicketResponse.builder()
 				.id(ticket.getId())
 				.title(ticket.getTitle())
@@ -449,6 +467,7 @@ public class TicketServiceImpl implements TicketService {
 				.resourceId(ticket.getResourceId())
 				.locationText(ticket.getLocationText())
 				.createdByUserId(ticket.getCreatedByUserId())
+				.createdByUserName(createdByUserName)
 				.assignedTechnicianId(ticket.getAssignedTechnicianId())
 				.rejectionReason(ticket.getRejectionReason())
 				.resolutionNotes(ticket.getResolutionNotes())
@@ -458,6 +477,24 @@ public class TicketServiceImpl implements TicketService {
 				.createdAt(ticket.getCreatedAt())
 				.updatedAt(ticket.getUpdatedAt())
 				.build();
+	}
+
+	private Map<Long, String> loadUserNamesById(List<Ticket> tickets) {
+		Set<Long> reporterIds = tickets.stream()
+				.map(Ticket::getCreatedByUserId)
+				.filter(Objects::nonNull)
+				.collect(Collectors.toSet());
+		if (reporterIds.isEmpty()) {
+			return Map.of();
+		}
+		return userRepository.findAllById(reporterIds).stream()
+				.collect(Collectors.toMap(User::getId, User::getName));
+	}
+
+	private String resolveUserName(Long userId) {
+		return userRepository.findById(userId)
+				.map(User::getName)
+				.orElse(null);
 	}
 
 	private TicketCommentResponse toCommentResponse(TicketComment comment) {

@@ -48,7 +48,9 @@ function AppRoutes() {
           <Route path="tickets/create" element={<CreateTicketPage />} />
           <Route path="tickets/:id" element={<TicketDetailsPage />} />
           <Route path="resources" element={<ResourceListPage />} />
-          <Route path="resources/create" element={<CreateResourcePage />} />
+          <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
+            <Route path="resources/create" element={<CreateResourcePage />} />
+          </Route>
           <Route path="resources/edit/:id" element={<EditResourcePage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>

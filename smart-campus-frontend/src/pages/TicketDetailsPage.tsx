@@ -647,7 +647,10 @@ export default function TicketDetailsPage() {
               <DetailRow label="Category" value={TICKET_CATEGORY_LABELS[ticket.category]} />
               <DetailRow label="Location" value={ticket.locationText} />
               <DetailRow label="Contact" value={ticket.preferredContact} />
-              <DetailRow label="Reported By" value={`User #${ticket.createdByUserId}`} />
+              <DetailRow
+                label="Reported By"
+                value={ticket.createdByUserName?.trim() || `User #${ticket.createdByUserId}`}
+              />
               <DetailRow label="Assigned To" value={ticket.assignedTechnicianId ? `Tech #${ticket.assignedTechnicianId}` : '—'} />
               <DetailRow label="Created" value={formatDate(ticket.createdAt)} />
               <DetailRow label="First Response" value={formatDate(ticket.firstResponseAt)} />
