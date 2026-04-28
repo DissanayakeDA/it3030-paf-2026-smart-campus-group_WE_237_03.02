@@ -88,6 +88,21 @@ Available scripts:
 
 Frontend runs on: `http://localhost:5173`
 
+If Vite logs `http proxy error ... ECONNREFUSED`, configure the frontend backend target in `smart-campus-frontend/.env`:
+
+```bash
+# Option A: keep proxy mode, but point proxy to your backend host/port
+VITE_DEV_API_PROXY_TARGET=http://127.0.0.1:8080
+
+# Option B: bypass proxy and call API directly
+VITE_API_BASE_URL=http://localhost:8080
+
+# Optional: force OAuth start URL (recommended for Google OAuth in dev)
+VITE_OAUTH_BASE_URL=http://localhost:8080
+```
+
+Then restart Vite (`npm run dev`).
+
 ---
 
 ### 🔹 3. Backend Setup
@@ -112,6 +127,7 @@ Set these before starting the backend:
 ```bash
 export GOOGLE_CLIENT_ID=your-google-client-id
 export GOOGLE_CLIENT_SECRET=your-google-client-secret
+export GOOGLE_REDIRECT_URI=http://localhost:8080/auth/oauth2/callback/google
 export APP_OAUTH2_REDIRECT_SUCCESS_URI=http://localhost:5173/oauth2/callback
 export APP_OAUTH2_REDIRECT_FAILURE_URI=http://localhost:5173/login
 ```
@@ -163,6 +179,7 @@ docker run --rm -p 8080:8080 \
   -e SPRING_DATASOURCE_PASSWORD=YOUR_PASSWORD \
   -e GOOGLE_CLIENT_ID=your-google-client-id \
   -e GOOGLE_CLIENT_SECRET=your-google-client-secret \
+  -e GOOGLE_REDIRECT_URI=http://localhost:8080/auth/oauth2/callback/google \
   -e APP_OAUTH2_REDIRECT_SUCCESS_URI=http://localhost:5173/oauth2/callback \
   -e APP_OAUTH2_REDIRECT_FAILURE_URI=http://localhost:5173/login \
   --name smart-campus-backend \

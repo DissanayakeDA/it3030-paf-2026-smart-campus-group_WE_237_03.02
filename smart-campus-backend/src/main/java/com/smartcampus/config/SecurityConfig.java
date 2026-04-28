@@ -73,6 +73,7 @@ public class SecurityConfig {
 						.requestMatchers("/api/ticket-comments", "/api/ticket-comments/**").permitAll()
 						.requestMatchers("/api/resources", "/api/resources/**").permitAll()
 						.requestMatchers("/api/bookings", "/api/bookings/**").permitAll()
+						.requestMatchers("/api/notifications", "/api/notifications/**").permitAll()
 						.anyRequest().authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

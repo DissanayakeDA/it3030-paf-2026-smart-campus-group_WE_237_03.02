@@ -18,6 +18,7 @@ import MyBookingsPage from './pages/MyBookingsPage';
 import BookingDetailsPage from './pages/BookingDetailsPage';
 import EditBookingPage from './pages/EditBookingPage';
 import AdminBookingsPage from './pages/AdminBookingsPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 // Redirects unauthenticated users to /login
 function ProtectedRoute() {
@@ -71,6 +72,7 @@ function AppRoutes() {
           <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
             <Route path="admin/bookings" element={<AdminBookingsPage />} />
           </Route>
+          <Route path="notifications" element={<NotificationsPage />} />
         </Route>
       </Route>
 

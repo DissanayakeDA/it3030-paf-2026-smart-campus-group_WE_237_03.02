@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { notificationService } from "../../services/notification.service";
 import SidebarItem from "./SidebarItem";
 
 function IconDashboard() {
@@ -91,20 +93,35 @@ function IconProfile() {
   );
 }
 
-function IconBooking() {
+function IconRequestBooking() {
   return (
-    <svg
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.8}
-      stroke="currentColor"
-      className="w-5 h-5"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-      />
+    <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 10.5v6m3-3H9" />
+    </svg>
+  );
+}
+
+function IconMyBookings() {
+  return (
+    <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+    </svg>
+  );
+}
+
+function IconAllBookings() {
+  return (
+    <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+    </svg>
+  );
+}
+
+function IconBell() {
+  return (
+    <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
     </svg>
   );
 }
@@ -134,6 +151,23 @@ interface AppSidebarProps {
 
 export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
   const { user, logout } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) { setUnreadCount(0); return; }
+    let cancelled = false;
+
+    const fetch = async () => {
+      try {
+        const count = await notificationService.getUnreadCount(user.id);
+        if (!cancelled) setUnreadCount(count);
+      } catch { /* ignore */ }
+    };
+
+    fetch();
+    const id = window.setInterval(fetch, 20000);
+    return () => { cancelled = true; window.clearInterval(id); };
+  }, [user]);
 
   const initials = user?.name
     ? user.name
@@ -198,20 +232,26 @@ export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
             icon={<IconProfile />}
           />
           <SidebarItem
+            to="/notifications"
+            label="Notifications"
+            icon={<IconBell />}
+            badge={unreadCount}
+          />
+          <SidebarItem
             to="/bookings/new"
             label="Request Booking"
-            icon={<IconBooking />}
+            icon={<IconRequestBooking />}
           />
           <SidebarItem
             to="/bookings"
             label="My Bookings"
-            icon={<IconBooking />}
+            icon={<IconMyBookings />}
           />
           {user?.role === "ADMIN" && (
             <SidebarItem
               to="/admin/bookings"
               label="All Bookings"
-              icon={<IconBooking />}
+              icon={<IconAllBookings />}
             />
           )}
         </nav>

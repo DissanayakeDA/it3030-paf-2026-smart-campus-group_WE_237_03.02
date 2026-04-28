@@ -22,6 +22,8 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.smartcampus.auth.entity.User;
 import com.smartcampus.auth.repository.UserRepository;
+import com.smartcampus.notification.enums.NotificationType;
+import com.smartcampus.notification.service.NotificationService;
 import com.smartcampus.ticket.dto.AddResolutionNotesRequest;
 import com.smartcampus.ticket.dto.AddTicketCommentRequest;
 import com.smartcampus.ticket.dto.AssignTechnicianRequest;
@@ -60,6 +62,8 @@ public class TicketServiceImpl implements TicketService {
 	private final UserRepository userRepository;
 
 	private final Cloudinary cloudinary;
+
+	private final NotificationService notificationService;
 
 	@Override
 	@Transactional(readOnly = true)
@@ -232,7 +236,17 @@ public class TicketServiceImpl implements TicketService {
 			ticket.setResolvedAt(null);
 		}
 		touchFirstResponse(ticket);
-		return toResponse(ticketRepository.save(ticket));
+		Ticket saved = ticketRepository.save(ticket);
+		if (saved.getCreatedByUserId() != null) {
+			String statusLabel = next.name().replace('_', ' ');
+			notificationService.create(
+					saved.getCreatedByUserId(),
+					NotificationType.TICKET_STATUS_CHANGED,
+					"Your ticket #" + saved.getId() + " status changed to " + statusLabel + ".",
+					saved.getId()
+			);
+		}
+		return toResponse(saved);
 	}
 
 	@Override
@@ -262,6 +276,15 @@ public class TicketServiceImpl implements TicketService {
 				.content(request.getContent())
 				.build();
 		TicketComment saved = ticketCommentRepository.save(comment);
+		Long ownerId = ticket.getCreatedByUserId();
+		if (ownerId != null && !ownerId.equals(request.getAuthorUserId())) {
+			notificationService.create(
+					ownerId,
+					NotificationType.TICKET_COMMENT_ADDED,
+					"A new comment was added to your ticket #" + ticket.getId() + ".",
+					ticket.getId()
+			);
+		}
 		return toCommentResponse(saved);
 	}
 

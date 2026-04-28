@@ -10,6 +10,8 @@ import com.smartcampus.booking.entity.Booking;
 import com.smartcampus.booking.enums.BookingStatus;
 import com.smartcampus.booking.repository.BookingRepository;
 import com.smartcampus.auth.enums.Role;
+import com.smartcampus.notification.enums.NotificationType;
+import com.smartcampus.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -174,7 +177,14 @@ public class BookingServiceImpl implements BookingService {
             booking.setAdminReason(request.getReason());
         }
 
-        return mapToResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+        notificationService.create(
+                saved.getUser().getId(),
+                NotificationType.BOOKING_APPROVED,
+                "Your booking #" + saved.getId() + " has been approved.",
+                saved.getId()
+        );
+        return mapToResponse(saved);
     }
 
     @Override
@@ -229,7 +239,14 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus(BookingStatus.REJECTED);
         booking.setAdminReason(request.getReason());
 
-        return mapToResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+        notificationService.create(
+                saved.getUser().getId(),
+                NotificationType.BOOKING_REJECTED,
+                "Your booking #" + saved.getId() + " has been rejected. Reason: " + request.getReason(),
+                saved.getId()
+        );
+        return mapToResponse(saved);
     }
 
     @Override
