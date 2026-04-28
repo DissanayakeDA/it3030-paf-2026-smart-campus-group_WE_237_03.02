@@ -18,6 +18,7 @@ public class TicketCommentResponse {
 	private Long id;
 	private Long ticketId;
 	private Long authorUserId;
+	private String authorUserName;
 	private String content;
 	private Instant createdAt;
 	private Instant updatedAt;

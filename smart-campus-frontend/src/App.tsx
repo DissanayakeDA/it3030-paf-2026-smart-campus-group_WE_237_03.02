@@ -14,6 +14,11 @@ import UserManagementPage from './pages/UserManagementPage';
 import OAuth2CallbackPage from './pages/OAuth2CallbackPage';
 import type { Role } from './types/auth.types';
 import CreateBookingPage from './pages/CreateBookingPage';
+import MyBookingsPage from './pages/MyBookingsPage';
+import BookingDetailsPage from './pages/BookingDetailsPage';
+import EditBookingPage from './pages/EditBookingPage';
+import AdminBookingsPage from './pages/AdminBookingsPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 // Redirects unauthenticated users to /login
 function ProtectedRoute() {
@@ -61,6 +66,13 @@ function AppRoutes() {
             <Route path="users" element={<UserManagementPage />} />
           </Route>
           <Route path="bookings/new" element={<CreateBookingPage />} />
+          <Route path="bookings" element={<MyBookingsPage />} />
+          <Route path="bookings/:id" element={<BookingDetailsPage />} />
+          <Route path="bookings/:id/edit" element={<EditBookingPage />} />
+          <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
+            <Route path="admin/bookings" element={<AdminBookingsPage />} />
+          </Route>
+          <Route path="notifications" element={<NotificationsPage />} />
         </Route>
       </Route>
 

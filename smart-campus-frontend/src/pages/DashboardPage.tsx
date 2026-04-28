@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import PageContainer from '../components/common/PageContainer';
 import SectionTitle from '../components/common/SectionTitle';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -8,13 +9,32 @@ import RecentTicketsTable from '../components/dashboard/RecentTicketsTable';
 import { useAuth } from '../context/AuthContext';
 import { useTickets } from '../hooks/useTickets';
 import { useResources } from '../hooks/useResources';
+import { useMyBookings } from '../hooks/useMyBookings';
 import { ticketService } from '../services/ticket.service';
-import type { TicketSummaryResponse } from '../types/ticket.types';
+import { bookingService } from '../services/booking.service';
+import type { TicketResponse, TicketSummaryResponse } from '../types/ticket.types';
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
 
 function formatMinutes(min: number | null): string {
   if (min === null) return '—';
   if (min < 60) return `${min}m`;
   return `${Math.floor(min / 60)}h ${min % 60}m`;
+}
+
+function formatBookingDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 // ── Icons ──────────────────────────────────────────────────────────────────────
@@ -34,12 +54,6 @@ const IconProgress = (
 const IconResolved = (
   <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="#16a34a" className="w-5 h-5">
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
-
-const IconTotal = (
-  <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="#6366f1" className="w-5 h-5">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
   </svg>
 );
 
@@ -73,6 +87,30 @@ const IconBooking = (
   </svg>
 );
 
+const IconPendingBooking = (
+  <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="#ea580c" className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+  </svg>
+);
+
+const IconUsers = (
+  <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="#003559" className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+  </svg>
+);
+
+const IconProfile = (
+  <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="#003559" className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+
+const IconAddResource = (
+  <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="#003559" className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
 // ── Role badge ────────────────────────────────────────────────────────────────
 
 function RoleBadge({ role }: { role: string }) {
@@ -88,21 +126,83 @@ function RoleBadge({ role }: { role: string }) {
   );
 }
 
+// ── Urgency alert ─────────────────────────────────────────────────────────────
+
+function UrgencyAlert({ tickets }: { tickets: TicketResponse[] }) {
+  const urgent = tickets.filter(
+    (t) => (t.priority === 'HIGH' || t.priority === 'CRITICAL') && t.status === 'OPEN'
+  );
+  if (urgent.length === 0) return null;
+
+  return (
+    <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4">
+      <div className="flex items-center gap-2 mb-3">
+        <svg
+          className="w-4 h-4 text-amber-600 shrink-0"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        </svg>
+        <p className="text-sm font-semibold text-amber-700">
+          {urgent.length} urgent ticket{urgent.length !== 1 ? 's' : ''} need{urgent.length === 1 ? 's' : ''} attention
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {urgent.slice(0, 4).map((t) => (
+          <Link
+            key={t.id}
+            to={`/tickets/${t.id}`}
+            className="inline-flex items-center gap-1.5 text-xs bg-white border border-amber-200 rounded-lg px-3 py-1.5 text-amber-700 hover:bg-amber-100 transition-colors"
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                t.priority === 'CRITICAL' ? 'bg-red-500' : 'bg-amber-500'
+              }`}
+            />
+            #{t.id} {t.title.length > 28 ? `${t.title.slice(0, 28)}…` : t.title}
+          </Link>
+        ))}
+        {urgent.length > 4 && (
+          <Link to="/tickets" className="text-xs text-amber-600 hover:underline self-center">
+            +{urgent.length - 4} more
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── User dashboard ────────────────────────────────────────────────────────────
 
 function UserDashboard({ userId, userName, role }: { userId: number; userName: string; role: string }) {
-  const { tickets, loading, error } = useTickets({ createdByUserId: userId });
+  const { tickets, loading: ticketsLoading, error: ticketsError } = useTickets({ createdByUserId: userId });
+  const { bookings, resourceMap, loading: bookingsLoading } = useMyBookings();
 
-  const stats = useMemo(() => {
+  const ticketStats = useMemo(() => {
     const open = tickets.filter((t) => t.status === 'OPEN').length;
     const inProgress = tickets.filter((t) => t.status === 'IN_PROGRESS').length;
-    const resolved = tickets.filter(
-      (t) => t.status === 'RESOLVED' || t.status === 'CLOSED'
-    ).length;
-    return { open, inProgress, resolved, total: tickets.length };
+    const resolved = tickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+    return { open, inProgress, resolved };
   }, [tickets]);
 
-  const recent = useMemo(
+  const pendingBookings = useMemo(
+    () => bookings.filter((b) => b.status === 'PENDING').length,
+    [bookings]
+  );
+
+  const upcomingBookings = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return bookings
+      .filter((b) => b.status === 'APPROVED' && new Date(b.bookingDate) >= today)
+      .sort((a, b) => new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime())
+      .slice(0, 3);
+  }, [bookings]);
+
+  const recentTickets = useMemo(
     () =>
       [...tickets]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -112,56 +212,136 @@ function UserDashboard({ userId, userName, role }: { userId: number; userName: s
 
   return (
     <>
-      {/* Greeting */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-1">
           <h1 className="text-2xl font-bold text-[#061A40]">
-            Welcome back, {userName.split(' ')[0]}
+            {getGreeting()}, {userName.split(' ')[0]}
           </h1>
           <RoleBadge role={role} />
         </div>
-        <p className="text-sm text-gray-500">
-          Here's a quick look at your tickets and campus tools.
-        </p>
+        <p className="text-sm text-gray-500">Here's a quick look at your tickets and campus tools.</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-        <StatCard label="My Open Tickets" value={stats.open} delta="Awaiting response" color="bg-blue-50" icon={IconOpen} />
-        <StatCard label="In Progress" value={stats.inProgress} delta="Being worked on" color="bg-yellow-50" icon={IconProgress} />
-        <StatCard label="Resolved" value={stats.resolved} delta="Successfully closed" color="bg-green-50" icon={IconResolved} />
-        <StatCard label="Total Submitted" value={stats.total} delta="All time" color="bg-indigo-50" icon={IconTotal} />
+        <StatCard
+          label="My Open Tickets"
+          value={ticketStats.open}
+          delta="Awaiting response"
+          color="bg-blue-50"
+          icon={IconOpen}
+          accentColor="#0353A4"
+        />
+        <StatCard
+          label="In Progress"
+          value={ticketStats.inProgress}
+          delta="Being worked on"
+          color="bg-yellow-50"
+          icon={IconProgress}
+          accentColor="#d97706"
+        />
+        <StatCard
+          label="Resolved"
+          value={ticketStats.resolved}
+          delta="Successfully closed"
+          color="bg-green-50"
+          icon={IconResolved}
+          accentColor="#16a34a"
+        />
+        <StatCard
+          label="Pending Bookings"
+          value={bookingsLoading ? '…' : pendingBookings}
+          delta="Awaiting approval"
+          color="bg-orange-50"
+          icon={IconPendingBooking}
+          accentColor="#ea580c"
+        />
       </div>
 
-      {/* Quick actions */}
       <div className="mb-8">
         <SectionTitle title="Quick Actions" subtitle="Jump straight into what you need" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <QuickActionCard title="Report an Issue" description="Create a new maintenance ticket" to="/tickets/create" icon={IconTicket} />
-          <QuickActionCard title="Browse Resources" description="Explore rooms, labs, and equipment" to="/resources" icon={IconResource} />
-          <QuickActionCard title="My Bookings" description="Reserve a resource for your session" to="/bookings" icon={IconBooking} disabled />
+          <QuickActionCard
+            title="Report an Issue"
+            description="Create a new maintenance ticket"
+            to="/tickets/create"
+            icon={IconTicket}
+          />
+          <QuickActionCard
+            title="My Bookings"
+            description="View and manage your reservations"
+            to="/bookings"
+            icon={IconBooking}
+          />
+          <QuickActionCard
+            title="Request Booking"
+            description="Reserve a room or campus resource"
+            to="/bookings/new"
+            icon={IconResource}
+          />
         </div>
       </div>
 
-      {/* Recent tickets */}
+      {!bookingsLoading && upcomingBookings.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <SectionTitle
+              title="Upcoming Bookings"
+              subtitle="Your approved upcoming reservations"
+              action={
+                <Link to="/bookings" className="text-sm text-[#0353A4] hover:underline font-medium">
+                  View all
+                </Link>
+              }
+            />
+          </div>
+          <div className="divide-y divide-gray-50">
+            {upcomingBookings.map((booking) => {
+              const resource = resourceMap[booking.resourceId];
+              return (
+                <div key={booking.id} className="px-6 py-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
+                      <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="#16a34a" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#061A40] truncate">
+                        {resource?.name ?? `Resource #${booking.resourceId}`}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {formatBookingDate(booking.bookingDate)} · {booking.startTime} – {booking.endTime}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700 shrink-0">
+                    Approved
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
           <SectionTitle
             title="My Recent Tickets"
             subtitle="Your latest submissions"
             action={
-              <a href="/tickets" className="text-sm text-[#0353A4] hover:underline font-medium">
+              <Link to="/tickets" className="text-sm text-[#0353A4] hover:underline font-medium">
                 View all
-              </a>
+              </Link>
             }
           />
         </div>
-        {loading ? (
+        {ticketsLoading ? (
           <LoadingSpinner message="Loading your tickets…" />
-        ) : error ? (
-          <div className="px-6 py-10 text-center text-sm text-red-600">{error}</div>
+        ) : ticketsError ? (
+          <div className="px-6 py-10 text-center text-sm text-red-600">{ticketsError}</div>
         ) : (
-          <RecentTicketsTable tickets={recent} emptyMessage="You haven't submitted any tickets yet." />
+          <RecentTicketsTable tickets={recentTickets} emptyMessage="You haven't submitted any tickets yet." />
         )}
       </div>
     </>
@@ -170,20 +350,32 @@ function UserDashboard({ userId, userName, role }: { userId: number; userName: s
 
 // ── Admin dashboard ────────────────────────────────────────────────────────────
 
-function AdminDashboard({ userName, role }: { userName: string; role: string }) {
+function AdminDashboard({ userId, userName, role }: { userId: number; userName: string; role: string }) {
   const { tickets, loading: ticketsLoading, error: ticketsError } = useTickets();
   const [summary, setSummary] = useState<TicketSummaryResponse | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [pendingBookings, setPendingBookings] = useState<number | null>(null);
 
   useEffect(() => {
     ticketService
       .getSlaSummary()
       .then(setSummary)
       .catch((err) => {
-        const msg = err instanceof Error ? err.message : 'Failed to load summary.';
-        setSummaryError(msg);
+        setSummaryError(err instanceof Error ? err.message : 'Failed to load summary.');
       });
   }, []);
+
+  useEffect(() => {
+    bookingService
+      .getAll(userId, 'ADMIN', { status: 'PENDING' })
+      .then((b) => setPendingBookings(b.length))
+      .catch(() => setPendingBookings(0));
+  }, [userId]);
+
+  const inProgress = useMemo(
+    () => tickets.filter((t) => t.status === 'IN_PROGRESS').length,
+    [tickets]
+  );
 
   const recent = useMemo(
     () =>
@@ -195,69 +387,109 @@ function AdminDashboard({ userName, role }: { userName: string; role: string }) 
 
   return (
     <>
-      {/* Greeting */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-1">
           <h1 className="text-2xl font-bold text-[#061A40]">
-            Welcome back, {userName.split(' ')[0]}
+            {getGreeting()}, {userName.split(' ')[0]}
           </h1>
           <RoleBadge role={role} />
         </div>
         <p className="text-sm text-gray-500">System overview and recent ticket activity.</p>
       </div>
 
-      {/* Stats */}
+      <UrgencyAlert tickets={tickets} />
+
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
         <StatCard
           label="Open Tickets"
           value={summary?.openTickets ?? '—'}
-          delta={summary ? `${summary.totalTickets} total` : summaryError ?? 'Loading…'}
+          delta={summary ? `${summary.totalTickets} total` : (summaryError ?? 'Loading…')}
           color="bg-blue-50"
           icon={IconOpen}
+          accentColor="#0353A4"
+        />
+        <StatCard
+          label="In Progress"
+          value={inProgress}
+          delta="Currently being handled"
+          color="bg-yellow-50"
+          icon={IconProgress}
+          accentColor="#d97706"
         />
         <StatCard
           label="Resolved"
           value={summary?.resolvedTickets ?? '—'}
-          delta="All time"
+          delta={`Avg ${formatMinutes(summary?.averageResolutionMinutes ?? null)} resolution`}
           color="bg-green-50"
           icon={IconResolved}
+          accentColor="#16a34a"
         />
         <StatCard
-          label="Avg First Response"
-          value={summary ? formatMinutes(summary.averageFirstResponseMinutes) : '—'}
-          delta="Time to first response"
-          color="bg-yellow-50"
-          icon={IconProgress}
-        />
-        <StatCard
-          label="Avg Resolution"
-          value={summary ? formatMinutes(summary.averageResolutionMinutes) : '—'}
-          delta="Time to resolution"
+          label="Pending Bookings"
+          value={pendingBookings ?? '—'}
+          delta="Awaiting your review"
           color="bg-orange-50"
-          icon={IconResolution}
+          icon={IconPendingBooking}
+          accentColor="#ea580c"
         />
       </div>
 
-      {/* Quick actions */}
       <div className="mb-8">
         <SectionTitle title="Quick Actions" subtitle="Manage the campus at a glance" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <QuickActionCard title="All Tickets" description="Review and manage every request" to="/tickets" icon={IconTicket} />
-          <QuickActionCard title="Manage Resources" description="View and update the catalogue" to="/resources" icon={IconResource} />
-          <QuickActionCard title="Add Resource" description="Register a new room or asset" to="/resources/create" icon={IconBooking} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <QuickActionCard
+            title="All Tickets"
+            description="Review and manage every request"
+            to="/tickets"
+            icon={IconTicket}
+          />
+          <QuickActionCard
+            title="User Management"
+            description="Manage campus user accounts"
+            to="/users"
+            icon={IconUsers}
+          />
+          <QuickActionCard
+            title="All Bookings"
+            description="Review and approve booking requests"
+            to="/admin/bookings"
+            icon={IconBooking}
+            badge={
+              pendingBookings !== null && pendingBookings > 0
+                ? String(pendingBookings)
+                : undefined
+            }
+          />
+          <QuickActionCard
+            title="Manage Resources"
+            description="View and update the catalogue"
+            to="/resources"
+            icon={IconResource}
+          />
+          <QuickActionCard
+            title="Add Resource"
+            description="Register a new room or asset"
+            to="/resources/create"
+            icon={IconAddResource}
+          />
+          <QuickActionCard
+            title="My Profile"
+            description="View and update your account"
+            to="/profile"
+            icon={IconProfile}
+          />
         </div>
       </div>
 
-      {/* Recent tickets */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
           <SectionTitle
             title="Recent Tickets"
             subtitle="Latest facility requests across campus"
             action={
-              <a href="/tickets" className="text-sm text-[#0353A4] hover:underline font-medium">
+              <Link to="/tickets" className="text-sm text-[#0353A4] hover:underline font-medium">
                 View all
-              </a>
+              </Link>
             }
           />
         </div>
@@ -285,14 +517,10 @@ function TechnicianDashboard({ userId, userName, role }: { userId: number; userN
     const open = tickets.filter((t) => t.status === 'OPEN').length;
     const inProgress = tickets.filter((t) => t.status === 'IN_PROGRESS').length;
     const resolved = tickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
-    const assignedResourceIds = new Set(tickets.map((ticket) => ticket.resourceId).filter((id): id is number => id != null));
-    return {
-      open,
-      inProgress,
-      resolved,
-      total: tickets.length,
-      resourceCount: assignedResourceIds.size,
-    };
+    const assignedResourceIds = new Set(
+      tickets.map((t) => t.resourceId).filter((id): id is number => id != null)
+    );
+    return { open, inProgress, resolved, total: tickets.length, resourceCount: assignedResourceIds.size };
   }, [tickets]);
 
   const recentAssigned = useMemo(
@@ -305,11 +533,9 @@ function TechnicianDashboard({ userId, userName, role }: { userId: number; userN
 
   const assignedResources = useMemo(() => {
     const assignedIds = new Set(
-      tickets
-        .map((ticket) => ticket.resourceId)
-        .filter((resourceId): resourceId is number => resourceId != null)
+      tickets.map((t) => t.resourceId).filter((id): id is number => id != null)
     );
-    return resources.filter((resource) => assignedIds.has(resource.id));
+    return resources.filter((r) => assignedIds.has(r.id));
   }, [resources, tickets]);
 
   return (
@@ -317,26 +543,71 @@ function TechnicianDashboard({ userId, userName, role }: { userId: number; userN
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-1">
           <h1 className="text-2xl font-bold text-[#061A40]">
-            Welcome back, {userName.split(' ')[0]}
+            {getGreeting()}, {userName.split(' ')[0]}
           </h1>
           <RoleBadge role={role} />
         </div>
         <p className="text-sm text-gray-500">Your assigned maintenance work and related resources.</p>
       </div>
 
+      <UrgencyAlert tickets={tickets} />
+
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Assigned Open" value={stats.open} delta="Needs action" color="bg-blue-50" icon={IconOpen} />
-        <StatCard label="In Progress" value={stats.inProgress} delta="Currently working" color="bg-yellow-50" icon={IconProgress} />
-        <StatCard label="Resolved" value={stats.resolved} delta="Completed" color="bg-green-50" icon={IconResolved} />
-        <StatCard label="Assigned Resources" value={stats.resourceCount} delta={`${stats.total} tickets`} color="bg-teal-50" icon={IconAssigned} />
+        <StatCard
+          label="Assigned Open"
+          value={stats.open}
+          delta="Needs action"
+          color="bg-blue-50"
+          icon={IconOpen}
+          accentColor="#0353A4"
+        />
+        <StatCard
+          label="In Progress"
+          value={stats.inProgress}
+          delta="Currently working"
+          color="bg-yellow-50"
+          icon={IconProgress}
+          accentColor="#d97706"
+        />
+        <StatCard
+          label="Resolved"
+          value={stats.resolved}
+          delta="Completed"
+          color="bg-green-50"
+          icon={IconResolved}
+          accentColor="#16a34a"
+        />
+        <StatCard
+          label="Assigned Resources"
+          value={stats.resourceCount}
+          delta={`${stats.total} tickets total`}
+          color="bg-teal-50"
+          icon={IconAssigned}
+          accentColor="#0f766e"
+        />
       </div>
 
       <div className="mb-8">
         <SectionTitle title="Quick Actions" subtitle="Jump directly into your assigned work" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <QuickActionCard title="Assigned Tickets" description="Review tickets assigned to you" to="/tickets" icon={IconTicket} />
-          <QuickActionCard title="Assigned Resources" description="View resources linked to your tickets" to="/resources" icon={IconResource} />
-          <QuickActionCard title="All Resources" description="Browse full resource catalogue" to="/resources" icon={IconBooking} />
+          <QuickActionCard
+            title="Assigned Tickets"
+            description="Review tickets assigned to you"
+            to="/tickets"
+            icon={IconTicket}
+          />
+          <QuickActionCard
+            title="Browse Resources"
+            description="View resources linked to your tickets"
+            to="/resources"
+            icon={IconResource}
+          />
+          <QuickActionCard
+            title="My Profile"
+            description="View and update your account"
+            to="/profile"
+            icon={IconProfile}
+          />
         </div>
       </div>
 
@@ -346,9 +617,9 @@ function TechnicianDashboard({ userId, userName, role }: { userId: number; userN
             title="My Assigned Tickets"
             subtitle="Recently updated assignments"
             action={
-              <a href="/tickets" className="text-sm text-[#0353A4] hover:underline font-medium">
+              <Link to="/tickets" className="text-sm text-[#0353A4] hover:underline font-medium">
                 View all
-              </a>
+              </Link>
             }
           />
         </div>
@@ -357,7 +628,10 @@ function TechnicianDashboard({ userId, userName, role }: { userId: number; userN
         ) : ticketsError ? (
           <div className="px-6 py-10 text-center text-sm text-red-600">{ticketsError}</div>
         ) : (
-          <RecentTicketsTable tickets={recentAssigned} emptyMessage="No tickets have been assigned to you yet." />
+          <RecentTicketsTable
+            tickets={recentAssigned}
+            emptyMessage="No tickets have been assigned to you yet."
+          />
         )}
       </div>
 
@@ -379,17 +653,27 @@ function TechnicianDashboard({ userId, userName, role }: { userId: number; userN
         ) : (
           <div className="divide-y divide-gray-100">
             {assignedResources.map((resource) => (
-              <div key={resource.id} className="px-6 py-4 flex items-center justify-between gap-4">
+              <Link
+                key={resource.id}
+                to="/resources"
+                className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors"
+              >
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-[#061A40] truncate">{resource.name}</p>
                   <p className="text-xs text-gray-500 truncate">
-                    {resource.type} • {resource.location}
+                    {resource.type} · {resource.location}
                   </p>
                 </div>
-                <span className="px-2 py-1 rounded text-xs font-medium bg-[#B9D6F2] text-[#003559]">
-                  #{resource.id}
+                <span
+                  className={`px-2 py-1 rounded text-xs font-medium shrink-0 ${
+                    resource.status === 'ACTIVE'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-red-100 text-red-600'
+                  }`}
+                >
+                  {resource.status === 'ACTIVE' ? 'Active' : 'Out of Service'}
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         )}
@@ -417,7 +701,7 @@ export default function DashboardPage() {
   return (
     <PageContainer>
       {isAdmin ? (
-        <AdminDashboard userName={user.name} role={user.role} />
+        <AdminDashboard userId={user.id} userName={user.name} role={user.role} />
       ) : isTechnician ? (
         <TechnicianDashboard userId={user.id} userName={user.name} role={user.role} />
       ) : (

@@ -22,6 +22,8 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.smartcampus.auth.entity.User;
 import com.smartcampus.auth.repository.UserRepository;
+import com.smartcampus.notification.enums.NotificationType;
+import com.smartcampus.notification.service.NotificationService;
 import com.smartcampus.ticket.dto.AddResolutionNotesRequest;
 import com.smartcampus.ticket.dto.AddTicketCommentRequest;
 import com.smartcampus.ticket.dto.AssignTechnicianRequest;
@@ -60,6 +62,8 @@ public class TicketServiceImpl implements TicketService {
 	private final UserRepository userRepository;
 
 	private final Cloudinary cloudinary;
+
+	private final NotificationService notificationService;
 
 	@Override
 	@Transactional(readOnly = true)
@@ -232,7 +236,17 @@ public class TicketServiceImpl implements TicketService {
 			ticket.setResolvedAt(null);
 		}
 		touchFirstResponse(ticket);
-		return toResponse(ticketRepository.save(ticket));
+		Ticket saved = ticketRepository.save(ticket);
+		if (saved.getCreatedByUserId() != null) {
+			String statusLabel = next.name().replace('_', ' ');
+			notificationService.create(
+					saved.getCreatedByUserId(),
+					NotificationType.TICKET_STATUS_CHANGED,
+					"Your ticket #" + saved.getId() + " status changed to " + statusLabel + ".",
+					saved.getId()
+			);
+		}
+		return toResponse(saved);
 	}
 
 	@Override
@@ -262,6 +276,15 @@ public class TicketServiceImpl implements TicketService {
 				.content(request.getContent())
 				.build();
 		TicketComment saved = ticketCommentRepository.save(comment);
+		Long ownerId = ticket.getCreatedByUserId();
+		if (ownerId != null && !ownerId.equals(request.getAuthorUserId())) {
+			notificationService.create(
+					ownerId,
+					NotificationType.TICKET_COMMENT_ADDED,
+					"A new comment was added to your ticket #" + ticket.getId() + ".",
+					ticket.getId()
+			);
+		}
 		return toCommentResponse(saved);
 	}
 
@@ -452,13 +475,19 @@ public class TicketServiceImpl implements TicketService {
 	}
 
 	private TicketResponse toResponse(Ticket ticket, Map<Long, String> userNamesById) {
-		String createdByUserName = userNamesById.get(ticket.getCreatedByUserId());
-		if (createdByUserName == null && ticket.getCreatedByUserId() != null) {
-			createdByUserName = resolveUserName(ticket.getCreatedByUserId());
+		String createdByUserName = null;
+		if (ticket.getCreatedByUserId() != null) {
+			createdByUserName = userNamesById.get(ticket.getCreatedByUserId());
+			if (createdByUserName == null) {
+				createdByUserName = resolveUserName(ticket.getCreatedByUserId());
+			}
 		}
-		String assignedTechnicianName = userNamesById.get(ticket.getAssignedTechnicianId());
-		if (assignedTechnicianName == null && ticket.getAssignedTechnicianId() != null) {
-			assignedTechnicianName = resolveUserName(ticket.getAssignedTechnicianId());
+		String assignedTechnicianName = null;
+		if (ticket.getAssignedTechnicianId() != null) {
+			assignedTechnicianName = userNamesById.get(ticket.getAssignedTechnicianId());
+			if (assignedTechnicianName == null) {
+				assignedTechnicianName = resolveUserName(ticket.getAssignedTechnicianId());
+			}
 		}
 
 		return TicketResponse.builder()
@@ -507,10 +536,14 @@ public class TicketServiceImpl implements TicketService {
 	}
 
 	private TicketCommentResponse toCommentResponse(TicketComment comment) {
+		String authorUserName = comment.getAuthorUserId() != null
+				? resolveUserName(comment.getAuthorUserId())
+				: null;
 		return TicketCommentResponse.builder()
 				.id(comment.getId())
 				.ticketId(comment.getTicket().getId())
 				.authorUserId(comment.getAuthorUserId())
+				.authorUserName(authorUserName)
 				.content(comment.getContent())
 				.createdAt(comment.getCreatedAt())
 				.updatedAt(comment.getUpdatedAt())

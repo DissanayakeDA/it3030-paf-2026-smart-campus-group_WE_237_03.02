@@ -7,6 +7,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -16,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
 
     private static final int MAX_ERROR_LENGTH = 120;
+    private static final Logger LOG = LoggerFactory.getLogger(OAuth2LoginFailureHandler.class);
 
     @Value("${app.oauth2.redirect-failure-uri:http://localhost:5173/login}")
     private String oauth2FailureRedirectUri;
@@ -29,6 +32,9 @@ public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
         String errorMessage = "oauth2_login_failed";
         if (exception != null && StringUtils.hasText(exception.getMessage())) {
             errorMessage = trimErrorMessage(exception.getMessage());
+            LOG.warn("Google OAuth2 login failed: {}", exception.getMessage(), exception);
+        } else {
+            LOG.warn("Google OAuth2 login failed without exception message");
         }
 
         String separator = oauth2FailureRedirectUri.contains("?") ? "&" : "?";

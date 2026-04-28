@@ -50,6 +50,7 @@ export interface TicketCommentResponse {
   id: number;
   ticketId: number;
   authorUserId: number;
+  authorUserName?: string | null;
   content: string;
   createdAt: string;
   updatedAt: string;

@@ -7,16 +7,16 @@ This project is developed as part of the **IT3030 – Programming Applications a
 The system is a **Smart Campus Operations Hub** that allows universities to manage:
 
 - Facility & asset bookings (rooms, labs, equipment)
-- Maintenance & incident tickets
+- Maintenance & incident tickets with attachments and comments
 - Notifications
-- Role-based access control
+- OAuth2 login (Google) + role-based access control
 
 The application follows a **full-stack architecture** using:
 
-- **Frontend:** React (Vite + TypeScript + Tailwind CSS)
-- **Backend:** Spring Boot (Java)
+- **Frontend:** React 19 (Vite + TypeScript + Tailwind CSS v4)
+- **Backend:** Spring Boot (Java 21)
 - **Database:** PostgreSQL
-- **Version Control:** GitHub (Monorepo)
+- **Containerization:** Docker
 
 ---
 
@@ -24,18 +24,17 @@ The application follows a **full-stack architecture** using:
 
 ### 🔹 Frontend
 
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
+- React 19 + TypeScript
+- Vite 8
+- Tailwind CSS v4
 - Axios
-- React Router
+- React Router v7
 
 ### 🔹 Backend
 
-- Spring Boot
+- Spring Boot (Java 21)
 - Spring Data JPA
-- Spring Security
+- Spring Security + OAuth2 Client (Google)
 - REST API
 - Maven
 
@@ -48,11 +47,15 @@ The application follows a **full-stack architecture** using:
 ## 📁 Project Structure
 
 ```
-smart-campus-frontend/
-├── frontend/        # React application
-├── backend/         # Spring Boot application
-├── README.md
-└── .gitignore
+it3030-paf-2026-smart-campus-group_WE_237_03.02/
+├── smart-campus-backend/     # Spring Boot application (Java 21)
+│   ├── src/
+│   ├── pom.xml
+│   └── Dockerfile
+├── smart-campus-frontend/    # React + Vite application
+│   ├── src/
+│   └── package.json
+└── README.MD
 ```
 
 ---
@@ -62,8 +65,8 @@ smart-campus-frontend/
 ### 🔹 1. Clone Repository
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/it3030-paf-2026-smart-campus-groupXX.git
-cd it3030-paf-2026-smart-campus-groupXX
+git clone https://github.com/YOUR-USERNAME/it3030-paf-2026-smart-campus-group_WE_237_03.02.git
+cd it3030-paf-2026-smart-campus-group_WE_237_03.02
 ```
 
 ---
@@ -71,37 +74,51 @@ cd it3030-paf-2026-smart-campus-groupXX
 ### 🔹 2. Frontend Setup
 
 ```bash
-cd frontend
+cd smart-campus-frontend
 npm install
 npm run dev
 ```
 
-Frontend will run on:
+Available scripts:
 
+- `npm run dev` — start Vite dev server
+- `npm run build` — production build (`tsc -b && vite build`)
+- `npm run preview` — preview production build
+- `npm run lint` — run ESLint
+
+Frontend runs on: `http://localhost:5173`
+
+If Vite logs `http proxy error ... ECONNREFUSED`, configure the frontend backend target in `smart-campus-frontend/.env`:
+
+```bash
+# Option A: keep proxy mode, but point proxy to your backend host/port
+VITE_DEV_API_PROXY_TARGET=http://127.0.0.1:8080
+
+# Option B: bypass proxy and call API directly
+VITE_API_BASE_URL=http://localhost:8080
+
+# Optional: force OAuth start URL (recommended for Google OAuth in dev)
+VITE_OAUTH_BASE_URL=http://localhost:8080
 ```
-http://localhost:5173
-```
+
+Then restart Vite (`npm run dev`).
 
 ---
 
 ### 🔹 3. Backend Setup
 
 ```bash
-cd backend
+cd smart-campus-backend
 ./mvnw spring-boot:run
 ```
 
 Windows:
 
 ```powershell
-.\mvnw spring-boot:run
+.\mvnw.cmd spring-boot:run
 ```
 
-Backend will run on:
-
-```
-http://localhost:8080
-```
+Backend runs on: `http://localhost:8080`
 
 #### OAuth2 (Google) environment variables
 
@@ -110,6 +127,7 @@ Set these before starting the backend:
 ```bash
 export GOOGLE_CLIENT_ID=your-google-client-id
 export GOOGLE_CLIENT_SECRET=your-google-client-secret
+export GOOGLE_REDIRECT_URI=http://localhost:8080/auth/oauth2/callback/google
 export APP_OAUTH2_REDIRECT_SUCCESS_URI=http://localhost:5173/oauth2/callback
 export APP_OAUTH2_REDIRECT_FAILURE_URI=http://localhost:5173/login
 ```
@@ -131,7 +149,7 @@ http://localhost:8080/auth/oauth2/callback/google
 CREATE DATABASE smart_campus_db;
 ```
 
-Update `application.properties`:
+Update `smart-campus-backend/src/main/resources/application.properties`:
 
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/smart_campus_db
@@ -141,7 +159,66 @@ spring.datasource.password=YOUR_PASSWORD
 
 ---
 
-## 🔐 Features
+## 🐳 Docker Setup
+
+### 🔹 Build and run the backend container
+
+From the repository root:
+
+```bash
+cd smart-campus-backend
+docker build -t smart-campus-backend:latest .
+```
+
+Run the container (connecting to a local PostgreSQL on the host):
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL="jdbc:postgresql://host.docker.internal:5432/smart_campus_db" \
+  -e SPRING_DATASOURCE_USERNAME=postgres \
+  -e SPRING_DATASOURCE_PASSWORD=YOUR_PASSWORD \
+  -e GOOGLE_CLIENT_ID=your-google-client-id \
+  -e GOOGLE_CLIENT_SECRET=your-google-client-secret \
+  -e GOOGLE_REDIRECT_URI=http://localhost:8080/auth/oauth2/callback/google \
+  -e APP_OAUTH2_REDIRECT_SUCCESS_URI=http://localhost:5173/oauth2/callback \
+  -e APP_OAUTH2_REDIRECT_FAILURE_URI=http://localhost:5173/login \
+  --name smart-campus-backend \
+  smart-campus-backend:latest
+```
+
+### 🔹 Quick PostgreSQL via Docker
+
+```bash
+docker run --name smart-campus-db \
+  -e POSTGRES_DB=smart_campus_db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5432:5432 -d postgres:16
+```
+
+### 🔹 Useful Docker commands
+
+```bash
+docker ps                         # list running containers
+docker logs -f smart-campus-backend
+docker stop smart-campus-backend
+docker rm smart-campus-backend
+docker image rm smart-campus-backend:latest
+```
+
+---
+
+## 🔐 Features & API Modules
+
+| Module | Controller | Description |
+| ------ | ---------- | ----------- |
+| Authentication | `AuthController` | Local login/register + Google OAuth2 callback |
+| Users | `UserController` | User profile & role management |
+| Resources | `ResourceController` | Manage rooms, labs, equipment (admin) |
+| Bookings | `BookingController` | Create / approve / reject / cancel bookings with conflict detection |
+| Tickets | `TicketController` | Create tickets, assign technicians, track SLA |
+| Ticket Comments | `TicketCommentController` | Threaded comments on tickets |
+| Ticket Attachments | `TicketAttachmentController` | Upload / download ticket attachments |
 
 ### 📌 Module A – Facilities & Assets
 
@@ -158,9 +235,10 @@ spring.datasource.password=YOUR_PASSWORD
 
 - Create incident tickets
 - Upload attachments
-- Assign technicians
+- Assign technicians (`assignedTechnicianName` surfaced in responses)
 - Update status
 - Add comments
+- Track created-by user (`createdByUserName`)
 
 ### 📌 Module D – Notifications
 
@@ -199,23 +277,14 @@ spring.datasource.password=YOUR_PASSWORD
 
 ## 🧪 Testing
 
-- API tested using Postman
+- API tested using Postman (collection under `smart-campus-backend/postman/`)
 - Validation and error handling implemented
-- Unit / integration testing (optional)
-
----
-
-## 📷 Evidence
-
-- Screenshots included in the final report
-- Demonstration during viva
 
 ---
 
 ## ⚙️ Git Workflow
 
 - Feature-based commits
-- No bulk commits
 - Clear commit messages
 - Individual contributions tracked
 
@@ -225,16 +294,7 @@ spring.datasource.password=YOUR_PASSWORD
 
 - GitHub Repository (public or accessible)
 - Final PDF report
-- Working system (local)
-
----
-
-## 📌 Notes
-
-- Follow REST API best practices
-- Use proper HTTP status codes
-- Maintain clean architecture
-- Ensure secure file handling
+- Working system (local / Docker)
 
 ---
 

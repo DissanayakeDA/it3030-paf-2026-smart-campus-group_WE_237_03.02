@@ -12,6 +12,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/users': 'User Management',
   '/profile': 'My Profile',
   '/bookings/new': 'New Booking Request',
+  '/notifications': 'Notifications',
 };
 
 function resolveTitle(pathname: string): string {

@@ -5,10 +5,13 @@ import com.smartcampus.auth.repository.UserRepository;
 import com.smartcampus.booking.dto.BookingCreateRequest;
 import com.smartcampus.booking.dto.BookingResponse;
 import com.smartcampus.booking.dto.BookingReviewRequest;
+import com.smartcampus.booking.dto.BookingUpdateRequest;
 import com.smartcampus.booking.entity.Booking;
 import com.smartcampus.booking.enums.BookingStatus;
 import com.smartcampus.booking.repository.BookingRepository;
 import com.smartcampus.auth.enums.Role;
+import com.smartcampus.notification.enums.NotificationType;
+import com.smartcampus.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -58,6 +62,50 @@ public class BookingServiceImpl implements BookingService {
 
         // Map to response DTO
         return mapToResponse(savedBooking);
+    }
+
+    @Override
+    @Transactional
+    public BookingResponse updateBooking(Long id, BookingUpdateRequest request) {
+        // Validation: end time must be after start time
+        if (!request.getEndTime().isAfter(request.getStartTime())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time");
+        }
+
+        // Verify acting user exists
+        userRepository.findById(request.getActingUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Acting user not found"));
+
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        // Only the owner may update their booking
+        if (!booking.getUser().getId().equals(request.getActingUserId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to update this booking");
+        }
+
+        // Only pending bookings may be edited
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only pending bookings can be updated");
+        }
+
+        // Re-check conflicts with other APPROVED bookings, excluding self
+        checkForConflicts(
+                request.getResourceId(),
+                request.getBookingDate(),
+                request.getStartTime(),
+                request.getEndTime(),
+                booking.getId()
+        );
+
+        booking.setResourceId(request.getResourceId());
+        booking.setBookingDate(request.getBookingDate());
+        booking.setStartTime(request.getStartTime());
+        booking.setEndTime(request.getEndTime());
+        booking.setPurpose(request.getPurpose());
+        booking.setExpectedAttendees(request.getExpectedAttendees());
+
+        return mapToResponse(bookingRepository.save(booking));
     }
 
     @Override
@@ -129,7 +177,34 @@ public class BookingServiceImpl implements BookingService {
             booking.setAdminReason(request.getReason());
         }
 
-        return mapToResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+        notificationService.create(
+                saved.getUser().getId(),
+                NotificationType.BOOKING_APPROVED,
+                "Your booking #" + saved.getId() + " has been approved.",
+                saved.getId()
+        );
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public void deleteBooking(Long id, Long actingUserId) {
+        userRepository.findById(actingUserId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Acting user not found"));
+
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        if (!booking.getUser().getId().equals(actingUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to delete this booking");
+        }
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only pending bookings can be deleted");
+        }
+
+        bookingRepository.delete(booking);
     }
 
     private void checkForConflicts(Long resourceId, LocalDate date, LocalTime start, LocalTime end, Long excludeId) {
@@ -164,7 +239,14 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus(BookingStatus.REJECTED);
         booking.setAdminReason(request.getReason());
 
-        return mapToResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+        notificationService.create(
+                saved.getUser().getId(),
+                NotificationType.BOOKING_REJECTED,
+                "Your booking #" + saved.getId() + " has been rejected. Reason: " + request.getReason(),
+                saved.getId()
+        );
+        return mapToResponse(saved);
     }
 
     @Override

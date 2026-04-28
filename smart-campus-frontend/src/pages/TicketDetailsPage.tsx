@@ -211,16 +211,21 @@ export default function TicketDetailsPage() {
       });
   }, [isAdmin]);
 
-  function getCommentAuthorLabel(authorUserId: number): string {
-    const author = usersById[authorUserId];
-    if (!author) return `User #${authorUserId}`;
-    return `${author.name}(${toRoleLabel(author.role)})`;
+  function getCommentAuthorLabel(comment: TicketCommentResponse): string {
+    const author = usersById[comment.authorUserId];
+    if (author) return `${author.name}(${toRoleLabel(author.role)})`;
+    const apiName = comment.authorUserName?.trim();
+    if (apiName) return apiName;
+    if (user && comment.authorUserId === user.id && user.name.trim()) return user.name.trim();
+    return `User #${comment.authorUserId}`;
   }
 
-  function getCommentAuthorInitial(authorUserId: number): string {
-    const author = usersById[authorUserId];
-    if (!author || !author.name.trim()) return 'U';
-    return author.name.trim().charAt(0).toUpperCase();
+  function getCommentAuthorInitial(comment: TicketCommentResponse): string {
+    const author = usersById[comment.authorUserId];
+    const name = author?.name?.trim() || comment.authorUserName?.trim()
+      || (user && comment.authorUserId === user.id ? user.name.trim() : '');
+    if (!name) return 'U';
+    return name.charAt(0).toUpperCase();
   }
 
   const sortedComments = useMemo(
@@ -497,13 +502,13 @@ export default function TicketDetailsPage() {
                   <div key={comment.id} className="flex gap-3">
                     <div className="w-8 h-8 rounded-full bg-[#B9D6F2] flex items-center justify-center shrink-0">
                       <span className="text-[#003559] text-xs font-semibold">
-                        {getCommentAuthorInitial(comment.authorUserId)}
+                        {getCommentAuthorInitial(comment)}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-medium text-gray-700">
-                          {getCommentAuthorLabel(comment.authorUserId)}
+                          {getCommentAuthorLabel(comment)}
                         </span>
                         <span className="text-xs text-gray-400">{formatDate(comment.createdAt)}</span>
                       </div>
